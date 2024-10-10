@@ -6,28 +6,35 @@ import javassist.CtClass;
 import javassist.CtMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 
 @Service
 public class DependecyHandler {
 
-    private static String USER_CLASS_CONTAINER; // Change this to the package prefix of your user's classes
+    // stores the package name that has all the user classes
+    private static String USER_CLASS_CONTAINER;
 
     public String analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
 
-        StringBuilder result = new StringBuilder("Class Dependencies:\n");
         USER_CLASS_CONTAINER = classContainer;
+        StringBuilder result = new StringBuilder("Class Dependencies:\n");
 
-        String projectDir = System.getProperty("user.dir"); // Get current project directory
+        // Get current project directory
+        String projectDir = System.getProperty("user.dir");
         String jarFilePath = projectDir + File.separator + file.getOriginalFilename(); // Use the original filename from the uploaded file
         FileProps.setFilePath(jarFilePath);
 
-        // Save the uploaded JAR file to the specified path
+        // Save the uploaded JAR file to this project's folder
         try (InputStream fileInputStream = file.getInputStream();
              FileOutputStream outputStream = new FileOutputStream(jarFilePath)) {
 
@@ -40,33 +47,32 @@ public class DependecyHandler {
             }
         }
 
-        // Use InputStream directly from MultipartFile
-        try (InputStream fileInputStream = file.getInputStream();
+        // Accessing the jar file
+        try (InputStream fileInputStream = new FileInputStream(FileProps.getFilePath());
              JarInputStream jarStream = new JarInputStream(fileInputStream)) {
 
-            // Initialize ClassPool and add the JAR file path to the ClassPool
+            // Initialize ClassPool
             ClassPool pool = ClassPool.getDefault();
-//            System.out.println(pool.toString());
-//            String jarFilePath = "jar:file:" + file.getOriginalFilename() + "!/"; // Create JAR file path for ClassPool
-            pool.appendClassPath(jarFilePath); // Add JAR file to ClassPool
-//            System.out.println("==== pool");
-//            System.out.println(pool.toString());
+            // Add JAR file to ClassPool
+            pool.appendClassPath(jarFilePath);
             JarEntry entry;
 
             while ((entry = jarStream.getNextJarEntry()) != null) {
 
+                // [Debug] Checking if pom file exists in the jar file
                 if(entry.getName().endsWith("pom.xml")) {
                     System.out.println("Found pom.xml file at" + entry.getName());
                 }
 
                 if (entry.getName().endsWith(".class")) {
+
                     // Transform the entry name to a fully qualified class name
-//                    System.out.println(entry.getName());
                     String className = entry.getName().replace("/", ".").replace(".class", "");
 
                     // Filter out non-user classes
                     if (!className.startsWith(USER_CLASS_CONTAINER)) {
-                        continue; // Skip any class that does not belong to the user-defined package
+                        // Skip any class that are not inside the user-defined package
+                        continue;
                     }
 
                     try {
@@ -92,9 +98,65 @@ public class DependecyHandler {
             throw e;
         }
 
+        // [beta] external dependency check
+        extractDependenciesFromJar(FileProps.getFilePath(), result);
+
         return result.toString();
     }
 
+    // [beta] Extract external dependencies
+    public static void extractDependenciesFromJar(String jarFilePath, StringBuilder sb) {
+        List<JarEntry> pomEntries = new ArrayList<>();
+
+        try (JarFile jarFile = new JarFile(jarFilePath)) {
+            // Find all pom.xml entries in the JAR
+            Iterator<JarEntry> entries = (Iterator<JarEntry>) jarFile.entries();
+            while (entries.hasNext()) {
+                JarEntry entry = entries.next();
+                if (entry.getName().endsWith("pom.xml")) {
+                    pomEntries.add(entry);
+                }
+            }
+
+            // If there are multiple pom.xml files, print their paths
+            if (pomEntries.isEmpty()) {
+                System.out.println("No pom.xml files found in the JAR.");
+                return;
+            }
+
+            System.out.println("Found pom.xml files:");
+            for (JarEntry pomEntry : pomEntries) {
+                System.out.println(pomEntry.getName());
+            }
+
+            // For simplicity, we'll assume the first pom.xml is the desired one.
+            // assuming that the real pom.xml file exists at the end of the list
+            JarEntry selectedPomEntry = pomEntries.get(pomEntries.size() - 1);
+            System.out.println("Selected pom.xml: " + selectedPomEntry.getName());
+
+            // Parse the selected pom.xml
+            try (InputStream input = jarFile.getInputStream(selectedPomEntry)) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setNamespaceAware(true);
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document document = builder.parse(input);
+                document.getDocumentElement().normalize();
+
+                // Extract dependencies
+                NodeList dependencyNodes = document.getElementsByTagNameNS("http://maven.apache.org/POM/4.0.0","dependency");
+                for (int i = 0; i < dependencyNodes.getLength(); i++) {
+                    String groupId = dependencyNodes.item(i).getChildNodes().item(1).getTextContent();
+                    String artifactId = dependencyNodes.item(i).getChildNodes().item(3).getTextContent();
+//                    String version = dependencyNodes.item(i).getChildNodes().item(5).getTextContent();
+                    sb.append("Dependency: ").append(groupId).append(", Artifact ID: ").append(artifactId).append("\n");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // analyzes internal dependencies
     private void analyzeClassDependencies(CtClass ctClass, StringBuilder result) throws Exception {
 
         // Check for superclass inheritance
