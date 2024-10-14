@@ -1,13 +1,12 @@
 package com.g8.service;
 
 import com.g8.properties.FileProps;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
+import javassist.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.jar.JarEntry;
@@ -16,18 +15,20 @@ import java.util.jar.JarInputStream;
 @Service
 public class DependecyHandler {
 
-    private static String USER_CLASS_CONTAINER; // Change this to the package prefix of your user's classes
+    // stores the package name that has all the user classes
+    private static String USER_CLASS_CONTAINER;
 
     public String analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
 
-        StringBuilder result = new StringBuilder("Class Dependencies:\n");
         USER_CLASS_CONTAINER = classContainer;
+        StringBuilder result = new StringBuilder("Class Dependencies:\n");
 
-        String projectDir = System.getProperty("user.dir"); // Get current project directory
+        // Get current project directory
+        String projectDir = System.getProperty("user.dir");
         String jarFilePath = projectDir + File.separator + file.getOriginalFilename(); // Use the original filename from the uploaded file
         FileProps.setFilePath(jarFilePath);
 
-        // Save the uploaded JAR file to the specified path
+        // Save the uploaded JAR file to this project's folder
         try (InputStream fileInputStream = file.getInputStream();
              FileOutputStream outputStream = new FileOutputStream(jarFilePath)) {
 
@@ -40,33 +41,32 @@ public class DependecyHandler {
             }
         }
 
-        // Use InputStream directly from MultipartFile
-        try (InputStream fileInputStream = file.getInputStream();
+        // Accessing the jar file
+        try (InputStream fileInputStream = new FileInputStream(FileProps.getFilePath());
              JarInputStream jarStream = new JarInputStream(fileInputStream)) {
 
-            // Initialize ClassPool and add the JAR file path to the ClassPool
+            // Initialize ClassPool
             ClassPool pool = ClassPool.getDefault();
-//            System.out.println(pool.toString());
-//            String jarFilePath = "jar:file:" + file.getOriginalFilename() + "!/"; // Create JAR file path for ClassPool
-            pool.appendClassPath(jarFilePath); // Add JAR file to ClassPool
-//            System.out.println("==== pool");
-//            System.out.println(pool.toString());
+            // Add JAR file to ClassPool
+            pool.appendClassPath(jarFilePath);
             JarEntry entry;
 
             while ((entry = jarStream.getNextJarEntry()) != null) {
 
+                // [Debug] Checking if pom file exists in the jar file
                 if(entry.getName().endsWith("pom.xml")) {
                     System.out.println("Found pom.xml file at" + entry.getName());
                 }
 
                 if (entry.getName().endsWith(".class")) {
+
                     // Transform the entry name to a fully qualified class name
-//                    System.out.println(entry.getName());
                     String className = entry.getName().replace("/", ".").replace(".class", "");
 
                     // Filter out non-user classes
                     if (!className.startsWith(USER_CLASS_CONTAINER)) {
-                        continue; // Skip any class that does not belong to the user-defined package
+                        // Skip any class that are not inside the user-defined package
+                        continue;
                     }
 
                     try {
@@ -95,6 +95,8 @@ public class DependecyHandler {
         return result.toString();
     }
 
+
+    // analyzes internal dependencies
     private void analyzeClassDependencies(CtClass ctClass, StringBuilder result) throws Exception {
 
         // Check for superclass inheritance
@@ -120,6 +122,69 @@ public class DependecyHandler {
             // Check if the field type belongs to the user-defined package
             if (fieldType.startsWith(USER_CLASS_CONTAINER)) {
                 result.append(ctClass.getName()).append(" has a composition with ").append(fieldType).append(" (field: ").append(field.getName()).append(")\n");
+            }
+        }
+
+        // Inspect field annotations
+        for (javassist.CtField field : ctClass.getDeclaredFields()) {
+            Object[] annotations = field.getAnnotations();
+            for (Object annotation : annotations) {
+                result.append(ctClass.getName())
+                        .append(" has field ")
+                        .append(field.getName())
+                        .append(" annotated with ")
+                        .append(annotation.toString())
+                        .append("\n");
+            }
+        }
+
+        // Inspect method annotations
+        for (CtMethod method : ctClass.getDeclaredMethods()) {
+            Object[] methodAnnotations = method.getAnnotations();
+            for (Object annotation : methodAnnotations) {
+                result.append(ctClass.getName())
+                        .append(" has method ")
+                        .append(method.getName())
+                        .append(" annotated with ")
+                        .append(annotation.toString())
+                        .append("\n");
+            }
+        }
+
+        Object[] classAnnotations = ctClass.getAnnotations();
+        for (Object annotation : classAnnotations) {
+            result.append(ctClass.getName())
+                    .append(" is annotated with ")
+                    .append(annotation.toString())
+                    .append("\n");
+        }
+
+        // Inspect inner classes
+        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
+            result.append(ctClass.getName())
+                    .append(" contains inner class ")
+                    .append(innerClass.getName())
+                    .append("\n");
+        }
+
+        // Inspect static fields and methods
+        for (CtField field : ctClass.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers())) {
+                result.append(ctClass.getName())
+                        .append(" has static field ")
+                        .append(field.getName())
+                        .append(" of type ")
+                        .append(field.getType().getName())
+                        .append("\n");
+            }
+        }
+
+        for (CtMethod method : ctClass.getDeclaredMethods()) {
+            if (Modifier.isStatic(method.getModifiers())) {
+                result.append(ctClass.getName())
+                        .append(" has static method ")
+                        .append(method.getName())
+                        .append("\n");
             }
         }
     }
