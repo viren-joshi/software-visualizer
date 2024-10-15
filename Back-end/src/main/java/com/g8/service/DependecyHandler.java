@@ -71,7 +71,6 @@ public class DependecyHandler {
 
                     try {
                         System.out.println("Analyzing user class: " + className);
-
                         // Load the class using ClassPool
                         CtClass ctClass = pool.getCtClass(className);
                         analyzeClassDependencies(ctClass, result);
@@ -87,7 +86,7 @@ public class DependecyHandler {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error while analyzing project: " + e.getMessage());
+            System.err.println("Error while analyzing project: ");
             e.printStackTrace();
             throw e;
         }
@@ -97,48 +96,88 @@ public class DependecyHandler {
 
 
     // analyzes internal dependencies
-    private void analyzeClassDependencies(CtClass ctClass, StringBuilder result) throws Exception {
+    private void analyzeClassDependencies(CtClass ctClass, StringBuilder result) throws Exception{
 
-        // Check for superclass inheritance
-        CtClass superclass = ctClass.getSuperclass();
-        if (superclass != null && superclass.getName().startsWith(USER_CLASS_CONTAINER)) {
-            result.append(ctClass.getName()).append(" inherits from ").append(superclass.getName()).append("\n");
-        }
+        // Extract inheritance dependencies
+        extractInheritance(ctClass, result);
 
-        // Check implemented interfaces
-        for (CtClass iface : ctClass.getInterfaces()) {
-            if (iface.getName().startsWith(USER_CLASS_CONTAINER)) {
-                result.append(ctClass.getName()).append(" implements ").append(iface.getName()).append("\n");
-            }
-        }
+        // Extract implementation dependencies
+        extractImplementation(ctClass, result);
 
-        // Inspect methods
+        // Extract methods
+        extractMethods(ctClass, result);
+
+        // Extract composition dependencies
+        extractComposition(ctClass, result);
+
+        // Extract fields with annotations
+        extractFieldsWithAnnotations(ctClass, result);
+
+        // Extract methods with annotations
+        extractMethodsWithAnnotations(ctClass, result);
+
+        // Extract classes with annotations
+        extractClassesWithAnnotations(ctClass, result);
+
+        // Extract inner classes
+        extractInnerClasses(ctClass, result);
+
+        // Extract static fields and methods
+        extractStaticFields(ctClass, result);
+
+        // Extract static methods in classes
+        extractStaticMethods(ctClass, result);
+    }
+
+    private void extractStaticMethods(CtClass ctClass, StringBuilder result) {
+
         for (CtMethod method : ctClass.getDeclaredMethods()) {
-            result.append(ctClass.getName()).append(" has method ").append(method.getName()).append("\n");
-        }
-
-        for (javassist.CtField field : ctClass.getDeclaredFields()) {
-            String fieldType = field.getType().getName();
-            // Check if the field type belongs to the user-defined package
-            if (fieldType.startsWith(USER_CLASS_CONTAINER)) {
-                result.append(ctClass.getName()).append(" has a composition with ").append(fieldType).append(" (field: ").append(field.getName()).append(")\n");
-            }
-        }
-
-        // Inspect field annotations
-        for (javassist.CtField field : ctClass.getDeclaredFields()) {
-            Object[] annotations = field.getAnnotations();
-            for (Object annotation : annotations) {
+            if (Modifier.isStatic(method.getModifiers())) {
                 result.append(ctClass.getName())
-                        .append(" has field ")
-                        .append(field.getName())
-                        .append(" annotated with ")
-                        .append(annotation.toString())
+                        .append(" has static method ")
+                        .append(method.getName())
                         .append("\n");
             }
         }
+    }
 
-        // Inspect method annotations
+    private void extractStaticFields(CtClass ctClass, StringBuilder result) throws NotFoundException {
+
+        for (CtField field : ctClass.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers())) {
+                result.append(ctClass.getName())
+                        .append(" has static field ")
+                        .append(field.getName())
+                        .append(" of type ")
+                        .append(field.getType().getName())
+                        .append("\n");
+            }
+        }
+    }
+
+    private void extractInnerClasses(CtClass ctClass, StringBuilder result) throws NotFoundException {
+
+        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
+            result.append(ctClass.getName())
+                    .append(" contains inner class ")
+                    .append(innerClass.getName())
+                    .append("\n");
+        }
+    }
+
+    private void extractClassesWithAnnotations(CtClass ctClass, StringBuilder result) throws ClassNotFoundException {
+
+        Object[] classAnnotations = ctClass.getAnnotations();
+        for (Object annotation : classAnnotations) {
+            result.append(ctClass.getName())
+                    .append(" is annotated with ")
+                    .append(annotation.toString())
+                    .append("\n");
+        }
+    }
+
+    private void extractMethodsWithAnnotations(CtClass ctClass, StringBuilder result) throws ClassNotFoundException {
+
         for (CtMethod method : ctClass.getDeclaredMethods()) {
             Object[] methodAnnotations = method.getAnnotations();
             for (Object annotation : methodAnnotations) {
@@ -150,42 +189,55 @@ public class DependecyHandler {
                         .append("\n");
             }
         }
+    }
 
-        Object[] classAnnotations = ctClass.getAnnotations();
-        for (Object annotation : classAnnotations) {
-            result.append(ctClass.getName())
-                    .append(" is annotated with ")
-                    .append(annotation.toString())
-                    .append("\n");
-        }
+    private void extractFieldsWithAnnotations(CtClass ctClass, StringBuilder result) throws ClassNotFoundException {
 
-        // Inspect inner classes
-        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
-            result.append(ctClass.getName())
-                    .append(" contains inner class ")
-                    .append(innerClass.getName())
-                    .append("\n");
-        }
-
-        // Inspect static fields and methods
-        for (CtField field : ctClass.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers())) {
+        for (javassist.CtField field : ctClass.getDeclaredFields()) {
+            Object[] annotations = field.getAnnotations();
+            for (Object annotation : annotations) {
                 result.append(ctClass.getName())
-                        .append(" has static field ")
+                        .append(" has field ")
                         .append(field.getName())
-                        .append(" of type ")
-                        .append(field.getType().getName())
+                        .append(" annotated with ")
+                        .append(annotation.toString())
                         .append("\n");
             }
         }
+    }
+
+    private void extractComposition(CtClass ctClass, StringBuilder result) throws NotFoundException {
+
+        for (javassist.CtField field : ctClass.getDeclaredFields()) {
+            String fieldType = field.getType().getName();
+            // Check if the field type belongs to the user-defined package
+            if (fieldType.startsWith(USER_CLASS_CONTAINER)) {
+                result.append(ctClass.getName()).append(" has a composition with ").append(fieldType).append(" (field: ").append(field.getName()).append(")\n");
+            }
+        }
+    }
+
+    private void extractMethods(CtClass ctClass, StringBuilder result) {
 
         for (CtMethod method : ctClass.getDeclaredMethods()) {
-            if (Modifier.isStatic(method.getModifiers())) {
-                result.append(ctClass.getName())
-                        .append(" has static method ")
-                        .append(method.getName())
-                        .append("\n");
+            result.append(ctClass.getName()).append(" has method ").append(method.getName()).append("\n");
+        }
+    }
+
+    private void extractImplementation(CtClass ctClass, StringBuilder result) throws NotFoundException {
+
+        for (CtClass iface : ctClass.getInterfaces()) {
+            if (iface.getName().startsWith(USER_CLASS_CONTAINER)) {
+                result.append(ctClass.getName()).append(" implements ").append(iface.getName()).append("\n");
             }
+        }
+    }
+
+    private void extractInheritance(CtClass ctClass, StringBuilder result) throws NotFoundException {
+
+        CtClass superclass = ctClass.getSuperclass();
+        if (superclass != null && superclass.getName().startsWith(USER_CLASS_CONTAINER)) {
+            result.append(ctClass.getName()).append(" inherits from ").append(superclass.getName()).append("\n");
         }
     }
 }
