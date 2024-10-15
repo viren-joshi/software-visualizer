@@ -61,7 +61,7 @@ public class DependecyHandler {
 
                 // [Debug] Checking if pom file exists in the jar file
                 if(entry.getName().endsWith("pom.xml")) {
-                    System.out.println("Found pom.xml file at" + entry.getName());
+                    System.out.println("Found pom.xml file at " + entry.getName());
                 }
 
                 if (entry.getName().endsWith(".class")) {
@@ -98,40 +98,35 @@ public class DependecyHandler {
             throw e;
         }
 
-        // [beta] external dependency check
+        // extract external dependency
         extractDependenciesFromJar(FileProps.getFilePath(), result);
 
         return result.toString();
     }
 
-    // [beta] Extract external dependencies
+    // Extract external dependencies
     public static void extractDependenciesFromJar(String jarFilePath, StringBuilder sb) {
-        List<JarEntry> pomEntries = new ArrayList<>();
+
+        JarEntry pomEntry = null;
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
             // Find all pom.xml entries in the JAR
             Iterator<JarEntry> entries = (Iterator<JarEntry>) jarFile.entries();
             while (entries.hasNext()) {
                 JarEntry entry = entries.next();
-                if (entry.getName().endsWith("pom.xml")) {
-                    pomEntries.add(entry);
+                if (entry.getName().equals("pom.xml")) {
+                   pomEntry = entry;
+                    break;
                 }
             }
 
             // If there are multiple pom.xml files, print their paths
-            if (pomEntries.isEmpty()) {
+            if (pomEntry == null) {
                 System.out.println("No pom.xml files found in the JAR.");
                 return;
             }
 
-            System.out.println("Found pom.xml files:");
-            for (JarEntry pomEntry : pomEntries) {
-                System.out.println(pomEntry.getName());
-            }
-
-            // For simplicity, we'll assume the first pom.xml is the desired one.
-            // assuming that the real pom.xml file exists at the end of the list
-            JarEntry selectedPomEntry = pomEntries.get(pomEntries.size() - 1);
+            JarEntry selectedPomEntry = pomEntry;
             System.out.println("Selected pom.xml: " + selectedPomEntry.getName());
 
             // Parse the selected pom.xml
