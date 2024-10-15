@@ -4,12 +4,20 @@ import com.g8.properties.FileProps;
 import javassist.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 
 @Service
@@ -55,7 +63,7 @@ public class DependecyHandler {
 
                 // [Debug] Checking if pom file exists in the jar file
                 if(entry.getName().endsWith("pom.xml")) {
-                    System.out.println("Found pom.xml file at" + entry.getName());
+                    System.out.println("Found pom.xml file at " + entry.getName());
                 }
 
                 if (entry.getName().endsWith(".class")) {
@@ -91,9 +99,58 @@ public class DependecyHandler {
             throw e;
         }
 
+        // extract external dependency
+        extractExternalDependencies(FileProps.getFilePath(), result);
+
         return result.toString();
     }
 
+    // Extract external dependencies
+    public static void extractExternalDependencies(String jarFilePath, StringBuilder sb) {
+
+        JarEntry pomEntry = null;
+
+        try (JarFile jarFile = new JarFile(jarFilePath)) {
+            // Find all pom.xml entries in the JAR
+            Iterator<JarEntry> entries = (Iterator<JarEntry>) jarFile.entries();
+            while (entries.hasNext()) {
+                JarEntry entry = entries.next();
+                if (entry.getName().equals("pom.xml")) {
+                   pomEntry = entry;
+                    break;
+                }
+            }
+
+            // If there are multiple pom.xml files, print their paths
+            if (pomEntry == null) {
+                System.out.println("No pom.xml files found in the JAR.");
+                return;
+            }
+
+            JarEntry selectedPomEntry = pomEntry;
+            System.out.println("Selected pom.xml: " + selectedPomEntry.getName());
+
+            // Parse the selected pom.xml
+            try (InputStream input = jarFile.getInputStream(selectedPomEntry)) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setNamespaceAware(true);
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document document = builder.parse(input);
+                document.getDocumentElement().normalize();
+
+                // Extract dependencies
+                NodeList dependencyNodes = document.getElementsByTagNameNS("http://maven.apache.org/POM/4.0.0","dependency");
+                for (int i = 0; i < dependencyNodes.getLength(); i++) {
+                    String groupId = dependencyNodes.item(i).getChildNodes().item(1).getTextContent();
+                    String artifactId = dependencyNodes.item(i).getChildNodes().item(3).getTextContent();
+//                    String version = dependencyNodes.item(i).getChildNodes().item(5).getTextContent();
+                    sb.append("Dependency: ").append(groupId).append(", Artifact ID: ").append(artifactId).append("\n");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     // analyzes internal dependencies
     private void analyzeClassDependencies(CtClass ctClass, StringBuilder result) throws Exception{
