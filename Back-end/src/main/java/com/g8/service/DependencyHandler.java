@@ -14,7 +14,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 @Service
-public class DependecyHandler {
+public class DependencyHandler {
 
     private static String USER_CLASS_CONTAINER; // Change this to the package prefix of your user's classes
 
