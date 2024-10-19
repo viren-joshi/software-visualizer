@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/initialize")
 public class UploadController {
 
-    private DependencyHandler dependencyHandler;
+    private final DependencyHandler dependencyHandler;
 
     @Autowired
     public UploadController(DependencyHandler dependencyHandler) {
