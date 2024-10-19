@@ -46,6 +46,16 @@ jobs:
       - name: Build Backend with Maven
         run: ./mvnw clean install
         working-directory: backend
+        - name: Check the working directory
+  run: pwd
+  working-directory: backend
+
+- name: List files in backend
+  run: ls -la
+  working-directory: backend
+
+- name: List root directory
+  run: ls -R
 
       - name: Run Backend Tests
         run: ./mvnw test
