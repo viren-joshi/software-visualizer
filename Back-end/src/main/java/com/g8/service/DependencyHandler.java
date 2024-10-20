@@ -1,5 +1,5 @@
 package com.g8.service;
-
+import com.g8.model.*;
 import com.g8.properties.FileProps;
 import javassist.*;
 import org.springframework.stereotype.Service;
@@ -12,13 +12,14 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.*;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.google.gson.Gson;
 
 @Service
 public class DependencyHandler {
@@ -29,12 +30,12 @@ public class DependencyHandler {
     public String analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
 
         USER_CLASS_CONTAINER = classContainer;
-        StringBuilder result = new StringBuilder("Class Dependencies:\n");
 
         // Get current project directory
         String projectDir = System.getProperty("user.dir");
         String jarFilePath = projectDir + File.separator + file.getOriginalFilename(); // Use the original filename from the uploaded file
         FileProps.setFilePath(jarFilePath);
+        UserProject userProject = new UserProject();
 
         // Save the uploaded JAR file to this project's folder
         try (InputStream fileInputStream = file.getInputStream();
@@ -53,6 +54,9 @@ public class DependencyHandler {
         try (InputStream fileInputStream = new FileInputStream(FileProps.getFilePath());
              JarInputStream jarStream = new JarInputStream(fileInputStream)) {
 
+            // Creating a UserProject Object
+
+
             // Initialize ClassPool
             ClassPool pool = ClassPool.getDefault();
             // Add JAR file to ClassPool
@@ -61,11 +65,12 @@ public class DependencyHandler {
 
             while ((entry = jarStream.getNextJarEntry()) != null) {
 
-                // [Debug] Checking if pom file exists in the jar file
+                // [Debug] Checking if pom file exists in the jar file.
                 if(entry.getName().endsWith("pom.xml")) {
                     System.out.println("Found pom.xml file at " + entry.getName());
                 }
 
+                // Run for each class.
                 if (entry.getName().endsWith(".class")) {
 
                     // Transform the entry name to a fully qualified class name
@@ -78,10 +83,13 @@ public class DependencyHandler {
                     }
 
                     try {
+
                         System.out.println("Analyzing user class: " + className);
                         // Load the class using ClassPool
                         CtClass ctClass = pool.getCtClass(className);
-                        analyzeClassDependencies(ctClass, result);
+                        UserClass userClass = analyzeClassDependencies(ctClass);
+                        userProject.userClassList.add(userClass);
+
                     } catch (javassist.NotFoundException e) {
                         // Handle case where class cannot be found
                         System.err.println("Class not found in ClassPool: " + className);
@@ -100,9 +108,10 @@ public class DependencyHandler {
         }
 
         // extract external dependency
-        extractExternalDependencies(FileProps.getFilePath(), result);
+//        extractExternalDependencies(FileProps.getFilePath(), result);
 
-        return result.toString();
+        Gson gson = new Gson();
+        return gson.toJson(userProject);
     }
 
     // Extract external dependencies
@@ -153,148 +162,148 @@ public class DependencyHandler {
     }
 
     // analyzes internal dependencies
-    private void analyzeClassDependencies(CtClass ctClass, StringBuilder result) throws Exception{
+    private UserClass analyzeClassDependencies(CtClass ctClass) throws Exception{
+        UserClass userClass = getUserClass(ctClass);
+        userClass.name = ctClass.getName();
+
+        userClass.classType = getClassType(ctClass);
+
+        // Extracting Class Annotations.
+        extractClassAnnotations(ctClass, userClass);
 
         // Extract inheritance dependencies
-        extractInheritance(ctClass, result);
+        extractInheritance(ctClass, userClass);
 
         // Extract implementation dependencies
-        extractImplementation(ctClass, result);
+        extractImplementation(ctClass, userClass);
 
-        // Extract methods
-        extractMethods(ctClass, result);
+        // Extract Methods
+        extractMethods(ctClass, userClass);
 
-        // Extract composition dependencies
-        extractComposition(ctClass, result);
-
-        // Extract fields with annotations
-        extractFieldsWithAnnotations(ctClass, result);
-
-        // Extract methods with annotations
-        extractMethodsWithAnnotations(ctClass, result);
-
-        // Extract classes with annotations
-        extractClassesWithAnnotations(ctClass, result);
+        // Extract Variables
+        extractVariables(ctClass, userClass);
 
         // Extract inner classes
-        extractInnerClasses(ctClass, result);
+        //extractInnerClasses(ctClass, userClass);
 
-        // Extract static fields and methods
-        extractStaticFields(ctClass, result);
-
-        // Extract static methods in classes
-        extractStaticMethods(ctClass, result);
+        return userClass;
     }
 
-    private void extractStaticMethods(CtClass ctClass, StringBuilder result) {
-
-        for (CtMethod method : ctClass.getDeclaredMethods()) {
-            if (Modifier.isStatic(method.getModifiers())) {
-                result.append(ctClass.getName())
-                        .append(" has static method ")
-                        .append(method.getName())
-                        .append("\n");
+    private UserClass getUserClass(CtClass ctClass) throws ClassNotFoundException {
+        // Check if the class is a Controller Class.
+        Object[] classAnnotations = ctClass.getAnnotations();
+        for (Object annotation : classAnnotations) {
+            String annotationName = annotation.toString();
+            if (annotationName.contains("PostMapping")) {
+                UserControllerClass userControllerClass = new UserControllerClass();
+                userControllerClass.isControllerClass = true;
+                return new UserControllerClass();
             }
         }
+        return new UserClass();
     }
 
-    private void extractStaticFields(CtClass ctClass, StringBuilder result) throws NotFoundException {
-
-        for (CtField field : ctClass.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers())) {
-                result.append(ctClass.getName())
-                        .append(" has static field ")
-                        .append(field.getName())
-                        .append(" of type ")
-                        .append(field.getType().getName())
-                        .append("\n");
-            }
+    private ClassType getClassType (CtClass ctClass) {
+        if(ctClass.isInterface()) {
+            return ClassType.interfaceClass;
+        } else if (Modifier.isAbstract(ctClass.getModifiers())) {
+            return  ClassType.abstractClass;
         }
+        return ClassType.normalClass;
     }
 
-    private void extractInnerClasses(CtClass ctClass, StringBuilder result) throws NotFoundException {
-
-        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
-            result.append(ctClass.getName())
-                    .append(" contains inner class ")
-                    .append(innerClass.getName())
-                    .append("\n");
-        }
-    }
-
-    private void extractClassesWithAnnotations(CtClass ctClass, StringBuilder result) throws ClassNotFoundException {
+    private void extractClassAnnotations(CtClass ctClass, UserClass userClass) throws ClassNotFoundException {
 
         Object[] classAnnotations = ctClass.getAnnotations();
         for (Object annotation : classAnnotations) {
-            result.append(ctClass.getName())
-                    .append(" is annotated with ")
-                    .append(annotation.toString())
-                    .append("\n");
-        }
-    }
-
-    private void extractMethodsWithAnnotations(CtClass ctClass, StringBuilder result) throws ClassNotFoundException {
-
-        for (CtMethod method : ctClass.getDeclaredMethods()) {
-            Object[] methodAnnotations = method.getAnnotations();
-            for (Object annotation : methodAnnotations) {
-                result.append(ctClass.getName())
-                        .append(" has method ")
-                        .append(method.getName())
-                        .append(" annotated with ")
-                        .append(annotation.toString())
-                        .append("\n");
+            if(userClass instanceof UserControllerClass) {
+                String annotationName = annotation.toString();
+                if (annotationName.contains("PostMapping")) {
+                    ((UserControllerClass) userClass).requestMapping = getEndpointFromAnnotation(annotationName);
+                    continue;
+                }
             }
+            userClass.annotations.add(annotation.toString());
         }
     }
 
-    private void extractFieldsWithAnnotations(CtClass ctClass, StringBuilder result) throws ClassNotFoundException {
-
-        for (javassist.CtField field : ctClass.getDeclaredFields()) {
-            Object[] annotations = field.getAnnotations();
-            for (Object annotation : annotations) {
-                result.append(ctClass.getName())
-                        .append(" has field ")
-                        .append(field.getName())
-                        .append(" annotated with ")
-                        .append(annotation.toString())
-                        .append("\n");
-            }
-        }
-    }
-
-    private void extractComposition(CtClass ctClass, StringBuilder result) throws NotFoundException {
-
-        for (javassist.CtField field : ctClass.getDeclaredFields()) {
-            String fieldType = field.getType().getName();
-            // Check if the field type belongs to the user-defined package
-            if (fieldType.startsWith(USER_CLASS_CONTAINER)) {
-                result.append(ctClass.getName()).append(" has a composition with ").append(fieldType).append(" (field: ").append(field.getName()).append(")\n");
-            }
-        }
-    }
-
-    private void extractMethods(CtClass ctClass, StringBuilder result) {
-
-        for (CtMethod method : ctClass.getDeclaredMethods()) {
-            result.append(ctClass.getName()).append(" has method ").append(method.getName()).append("\n");
-        }
-    }
-
-    private void extractImplementation(CtClass ctClass, StringBuilder result) throws NotFoundException {
-
-        for (CtClass iface : ctClass.getInterfaces()) {
-            if (iface.getName().startsWith(USER_CLASS_CONTAINER)) {
-                result.append(ctClass.getName()).append(" implements ").append(iface.getName()).append("\n");
-            }
-        }
-    }
-
-    private void extractInheritance(CtClass ctClass, StringBuilder result) throws NotFoundException {
+    private void extractInheritance(CtClass ctClass, UserClass userClass) throws NotFoundException {
 
         CtClass superclass = ctClass.getSuperclass();
         if (superclass != null && superclass.getName().startsWith(USER_CLASS_CONTAINER)) {
-            result.append(ctClass.getName()).append(" inherits from ").append(superclass.getName()).append("\n");
+            userClass.inherits = superclass.getName();
         }
+    }
+
+    private void extractImplementation(CtClass ctClass, UserClass result) throws NotFoundException {
+
+        for (CtClass iClass : ctClass.getInterfaces()) {
+            if (iClass.getName().startsWith(USER_CLASS_CONTAINER)) {
+                result.implementationList.add(iClass.getName());
+            }
+        }
+    }
+
+    private void extractMethods(CtClass ctClass, UserClass userClass) throws ClassNotFoundException {
+        for (CtMethod method : ctClass.getDeclaredMethods()) {
+            ClassMethod classMethod;
+            classMethod = new ClassMethod();
+            // Getting method's name.
+            classMethod.methodName = method.getName();
+
+            // Checking if the method is static.
+            classMethod.isStatic = Modifier.isStatic(method.getModifiers());
+
+            // Getting method annotations.
+            Object[] methodAnnotations = method.getAnnotations();
+            for(Object annotation: methodAnnotations) {
+                String annotationName = annotation.toString();
+                if (userClass instanceof UserControllerClass && annotationName.contains("PostMapping")) {
+                    ((UserControllerClass) userClass).endpoints.add(getEndpointFromAnnotation(annotationName));
+                    continue;
+                }
+                classMethod.annotations.add(annotation.toString());
+            }
+            userClass.methodList.add(classMethod);
+        }
+    }
+
+//    private void extractInnerClasses(CtClass ctClass, StringBuilder result) throws NotFoundException {
+//        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
+//            result.append(ctClass.getName())
+//                    .append(" contains inner class ")
+//                    .append(innerClass.getName())
+//                    .append("\n");
+//        }
+//    }
+
+
+    private void extractVariables(CtClass ctClass, UserClass userClass) throws NotFoundException, ClassNotFoundException {
+        for(CtField field : ctClass.getDeclaredFields()) {
+            ClassVariable classVariable = new ClassVariable();
+            classVariable.datatype = field.getType().getName();
+            classVariable.identifier = field.getName();
+            classVariable.isStatic = Modifier.isStatic(field.getModifiers());
+
+            Object[] annotations = field.getAnnotations();
+            classVariable.isAnnotated = annotations.length != 0;
+            for(Object annotation: field.getAnnotations()) {
+                classVariable.annotationList.add(annotation.toString());
+            }
+
+            userClass.variableList.add(classVariable);
+        }
+    }
+
+
+
+    private String getEndpointFromAnnotation(String annotation) {
+        Pattern pattern = Pattern.compile("value=\\{?\"?([^\"]+)\"?}?"); // Matches the value
+        Matcher matcher = pattern.matcher(annotation);
+        if(matcher.find()) {
+            return matcher.group(1);
+        }
+        // In-case the regex doesn't work.
+        return "/";
     }
 }

@@ -1,6 +1,6 @@
 package com.g8.model;
 
-enum ClassType {
+public enum ClassType {
     normalClass,
     abstractClass,
     interfaceClass
