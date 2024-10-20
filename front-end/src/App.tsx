@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Main from "./components/mainpage/Main";
-import UploadFile from "./UploadFile";
 import NotFound from "./components/NotFound";
+import UploadFile from './components/uploadfile/UploadFile';
 
 function App() {
   return (
