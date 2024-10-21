@@ -14,12 +14,12 @@ function App() {
         </Routes>
       </Router>
 
-      <header className="App-header">
+      {/* <header className="App-header">
         <p>
           Software Visualizer
         </p>
         <UploadFile />
-      </header>
+      </header> */}
     </div>
   );
 }
