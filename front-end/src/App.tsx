@@ -13,13 +13,6 @@ function App() {
           <Route path="*" element= {<NotFound />} />
         </Routes>
       </Router>
-
-      {/* <header className="App-header">
-        <p>
-          Software Visualizer
-        </p>
-        <UploadFile />
-      </header> */}
     </div>
   );
 }

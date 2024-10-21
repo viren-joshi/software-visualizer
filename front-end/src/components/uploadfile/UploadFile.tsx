@@ -1,7 +1,8 @@
 import { Box, Button, Grid2, Input, TextField, Typography } from "@mui/material";
-import { SetStateAction, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import PlusSignIcon from "../../assets/PlusSignIcon";
+import axios from "axios";
 
 const UploadFile = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -46,8 +47,20 @@ const UploadFile = () => {
     event.preventDefault(); // Prevent default behavior (file open)
   };
 
-  const navigateToNextPage =() =>{
-    console.log(packageName);
+  const navigateToNextPage =async () =>{
+    // code for integration of API will be done later 
+
+    // const formData = new FormData();
+    // formData.append('file', selectedFile!);
+    // formData.append('classContainer', 'com.blog');
+    // const response = await axios.post('http://localhost:8080/initialize/upload', formData, {
+    //   headers: {
+    //     'Content-Type': 'multipart/form-data',
+    //   },
+    // });
+    // console.log(packageName);
+    // console.log(response);
+    
     navigate('/mainpage');
   };
   return (
@@ -73,9 +86,8 @@ const UploadFile = () => {
             width: '400px',
             height:'200px'
           }}
-          onDrop={handleDrop} // handle file drop
-          onDragOver={handleDragOver} // prevent default behavior
-          //onClick={() => document.getElementById('file-input').click()}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
           >
           <PlusSignIcon/>
           <Typography>Drag & Drop</Typography>
@@ -126,7 +138,6 @@ const UploadFile = () => {
       </Grid2>
     </Grid2>
       
-      
       <Box mt={2}>
         <Button variant="outlined" onClick={() => setSelectedFile(null)}>
           Cancel
@@ -137,3 +148,7 @@ const UploadFile = () => {
 };
 
 export default UploadFile;
+function then(arg0: (response: { data: any; }) => void) {
+  throw new Error("Function not implemented.");
+}
+
