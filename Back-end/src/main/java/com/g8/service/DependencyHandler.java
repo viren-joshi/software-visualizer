@@ -87,7 +87,7 @@ public class DependencyHandler {
                         System.out.println("Analyzing user class: " + className);
                         // Load the class using ClassPool
                         CtClass ctClass = pool.getCtClass(className);
-                        UserClass userClass = analyzeClassDependencies(ctClass);
+                        UserClass userClass = extractClassDependencies(ctClass);
                         userProject.userClassList.add(userClass);
 
                     } catch (javassist.NotFoundException e) {
@@ -162,7 +162,7 @@ public class DependencyHandler {
     }
 
     // analyzes internal dependencies
-    private UserClass analyzeClassDependencies(CtClass ctClass) throws Exception{
+    private UserClass extractClassDependencies(CtClass ctClass) throws Exception{
         UserClass userClass = getUserClass(ctClass);
         userClass.name = ctClass.getName();
 
@@ -184,7 +184,7 @@ public class DependencyHandler {
         extractVariables(ctClass, userClass);
 
         // Extract inner classes
-        //extractInnerClasses(ctClass, userClass);
+        extractNestedClasses(ctClass, userClass);
 
         return userClass;
     }
@@ -268,14 +268,11 @@ public class DependencyHandler {
         }
     }
 
-//    private void extractInnerClasses(CtClass ctClass, StringBuilder result) throws NotFoundException {
-//        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
-//            result.append(ctClass.getName())
-//                    .append(" contains inner class ")
-//                    .append(innerClass.getName())
-//                    .append("\n");
-//        }
-//    }
+    private void extractNestedClasses(CtClass ctClass, UserClass userClass) throws Exception {
+        for (CtClass innerClass : ctClass.getDeclaredClasses()) {
+            userClass.nestedClassesList.add(extractClassDependencies(innerClass));
+        }
+    }
 
 
     private void extractVariables(CtClass ctClass, UserClass userClass) throws NotFoundException, ClassNotFoundException {
