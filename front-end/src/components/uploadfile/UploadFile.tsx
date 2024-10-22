@@ -1,4 +1,4 @@
-import { Box, Button, Grid2, Input, TextField, Typography } from "@mui/material";
+import { Box, Button, Grid2, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import PlusSignIcon from "../../assets/PlusSignIcon";
@@ -7,7 +7,7 @@ import axios from "axios";
 const UploadFile = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName,setFileName]= useState<String>();
-  const [packageName,setPackageName]= useState<String>("");
+  const [packageName,setPackageName]= useState<string>("");
   const [error, setError] = useState<string | null>(null); 
   const navigate = useNavigate();
 
@@ -50,18 +50,15 @@ const UploadFile = () => {
   const navigateToNextPage =async () =>{
     // code for integration of API will be done later 
 
-    // const formData = new FormData();
-    // formData.append('file', selectedFile!);
-    // formData.append('classContainer', 'com.blog');
-    // const response = await axios.post('http://localhost:8080/initialize/upload', formData, {
-    //   headers: {
-    //     'Content-Type': 'multipart/form-data',
-    //   },
-    // });
-    // console.log(packageName);
-    // console.log(response);
-    
-    navigate('/mainpage');
+    const formData = new FormData();
+    formData.append('file', selectedFile!);
+    formData.append('classContainer', packageName!);
+    const response = await axios.post('http://localhost:8080/initialize/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    navigate('/mainpage',  { state: { response: response.data } });
   };
   return (
     <>
@@ -148,7 +145,4 @@ const UploadFile = () => {
 };
 
 export default UploadFile;
-function then(arg0: (response: { data: any; }) => void) {
-  throw new Error("Function not implemented.");
-}
 
