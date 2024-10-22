@@ -33,3 +33,17 @@ jobs:
 
     - name: Run Unit Tests
       run: mvn test --file Back-end/pom.xml
+
+    - name: Build and push Docker image
+      run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t software-visualizer:${{ github.sha }} .
+          docker tag software-visualizer:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/software-visualizer:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/software-visualizer:${{ github.sha }}
+      
+    - name: Deploy the Docker container
+      run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/software-visualizer:${{ github.sha }}
+          docker stop software-visualizer || true
+          docker rm software-visualizer || true
+          docker run -d --name software-visualizer -p 8090:8090 ${{ secrets.DOCKER_USERNAME }}/software-visualizer:${{ github.sha }}
