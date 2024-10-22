@@ -6,19 +6,19 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: CI Pipeline
+name: Java Backend Pipeline for dev
 
 on:
   push:
     branches:
-      - CI_test
+      - dev
   pull_request:
     branches:
-      - CI_test
+      - dev
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v4
