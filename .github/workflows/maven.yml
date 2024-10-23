@@ -6,19 +6,20 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Backend Java Pipeline CI_test branch
+
+name: Java Backend Pipeline for dev
 
 on:
   push:
     branches:
-      - CI_test
+      - dev
   pull_request:
     branches:
-      - CI_test
+      - dev
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v4
@@ -34,6 +35,7 @@ jobs:
     - name: Run Unit Tests
       run: mvn test --file Back-end/pom.xml
 
+
     - name: Build and push Docker image
       run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -47,3 +49,4 @@ jobs:
           docker stop software-visualizer || true
           docker rm software-visualizer || true
           docker run -d --name software-visualizer -p 8090:8090 ${{ secrets.DOCKER_USERNAME }}/software-visualizer:${{ github.sha }}
+
