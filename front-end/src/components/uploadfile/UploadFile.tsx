@@ -1,6 +1,6 @@
 import { Box, Button, Grid, Typography } from "@mui/material";
 import { useState } from "react";
-import CloudIcon from "./CloudIcon";
+import CloudIcon from "./assets/CloudIcon";
 
 const UploadFile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
