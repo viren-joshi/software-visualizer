@@ -68,7 +68,7 @@ function Main() {
             padding: '20px',
           }}
         >
-          <GraphWhiteBoard/>
+          <GraphWhiteBoard jsonData={response} />
         </Box>
       </Grid2>
     </Grid2>
