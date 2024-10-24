@@ -9,10 +9,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
@@ -36,6 +39,7 @@ public class DependencyHandler {
         String jarFilePath = projectDir + File.separator + file.getOriginalFilename(); // Use the original filename from the uploaded file
         FileProps.setFilePath(jarFilePath);
         UserProject userProject = new UserProject();
+        userProject.classContainer = classContainer;
 
         // Save the uploaded JAR file to this project's folder
         try (InputStream fileInputStream = file.getInputStream();
@@ -68,6 +72,7 @@ public class DependencyHandler {
                 // [Debug] Checking if pom file exists in the jar file.
                 if(entry.getName().endsWith("pom.xml")) {
                     System.out.println("Found pom.xml file at " + entry.getName());
+                    extractExternalDependencies(FileProps.getFilePath(), entry, userProject);
                 }
 
                 // Run for each class.
@@ -115,30 +120,8 @@ public class DependencyHandler {
     }
 
     // Extract external dependencies
-    public static void extractExternalDependencies(String jarFilePath, StringBuilder sb) {
-
-        JarEntry pomEntry = null;
-
+    public static void extractExternalDependencies(String jarFilePath, JarEntry selectedPomEntry, UserProject userProject) {
         try (JarFile jarFile = new JarFile(jarFilePath)) {
-            // Find all pom.xml entries in the JAR
-            Iterator<JarEntry> entries = (Iterator<JarEntry>) jarFile.entries();
-            while (entries.hasNext()) {
-                JarEntry entry = entries.next();
-                if (entry.getName().equals("pom.xml")) {
-                   pomEntry = entry;
-                    break;
-                }
-            }
-
-            // If there are multiple pom.xml files, print their paths
-            if (pomEntry == null) {
-                System.out.println("No pom.xml files found in the JAR.");
-                return;
-            }
-
-            JarEntry selectedPomEntry = pomEntry;
-            System.out.println("Selected pom.xml: " + selectedPomEntry.getName());
-
             // Parse the selected pom.xml
             try (InputStream input = jarFile.getInputStream(selectedPomEntry)) {
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -146,14 +129,40 @@ public class DependencyHandler {
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 Document document = builder.parse(input);
                 document.getDocumentElement().normalize();
+                Gson gson = new Gson();
 
                 // Extract dependencies
                 NodeList dependencyNodes = document.getElementsByTagNameNS("http://maven.apache.org/POM/4.0.0","dependency");
                 for (int i = 0; i < dependencyNodes.getLength(); i++) {
-                    String groupId = dependencyNodes.item(i).getChildNodes().item(1).getTextContent();
-                    String artifactId = dependencyNodes.item(i).getChildNodes().item(3).getTextContent();
-//                    String version = dependencyNodes.item(i).getChildNodes().item(5).getTextContent();
-                    sb.append("Dependency: ").append(groupId).append(", Artifact ID: ").append(artifactId).append("\n");
+                    Map<String,String> extDep = new HashMap<>();
+                    NodeList childNodes = dependencyNodes.item(i).getChildNodes();
+                    for(int j = 0; j < childNodes.getLength(); j++)  {
+                        Node node = childNodes.item(j);
+                        if(node.getNodeType() == Node.ELEMENT_NODE) {
+                            String nodeName = node.getNodeName(), textCtx = node.getTextContent().trim();
+
+                            // Added this because the [textCtx] generated for 'exclusions' is not getting parsed and causing errors.
+                            if(nodeName.equals("exclusions")) {
+                                continue;
+                            }
+
+                            if(textCtx.contains("${")) {
+                                textCtx = textCtx.replace("\"", "")    // Escape quotes
+                                        .replace("\n", "")     // Escape new lines
+                                        .replace("\r", "")     // Escape carriage returns
+                                        .replace("\t", "")     // Escape tabs
+                                        .replace("$", "")      // Escape dollar signs
+                                        .replace("{", "")      // Escape curly brace
+                                        .replace("}", "")
+                                        .replace(".", "")
+                                        .replace("\"", "");
+                            }
+                            extDep.put(nodeName, textCtx);
+                        }
+                    }
+                    ExternalDependency externalDependency = gson.fromJson(extDep.toString(), ExternalDependency.class);
+                    userProject.externalDependencyList.add(externalDependency);
+
                 }
             }
         } catch (Exception e) {

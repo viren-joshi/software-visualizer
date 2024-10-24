@@ -2,11 +2,12 @@ import { Grid2, Box, Divider, Typography, List, ListItemText } from '@mui/materi
 import Sidebar from '../sidebar/Sidebar';
 import GraphWhiteBoard from '../graphWhiteBoard/GraphWhiteBoard';
 import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
 
 export interface ClassContainer {
   classContainer: string;
   userClassList: UserClass[];
-  externalDependencyList: string[];
+  externalDependencyList: MavenDependency[];
 };
 
 export interface UserClass {
@@ -36,10 +37,27 @@ export interface Method {
   isStatic: boolean;
 }
 
+export interface MavenDependency {
+  groupId: string;  // Group identifier for the dependency
+  artifactId: string;  // Artifact identifier for the dependency
+  version: string;  // Version of the artifact (can be empty)
+  scope: string;  // Scope of the dependency (e.g., compile, test, etc.), can be empty
+}
+
 function Main() {
   const location = useLocation();
   const { response } = location.state || {};
   const classNames = response.userClassList.map((userClass:UserClass) => userClass.name.split('.').pop());
+  const  extDependencies= response.externalDependencyList.map((externalDependency: MavenDependency) => externalDependency.artifactId);
+  const [alignment, setAlignment] = useState<String>('internal');
+  const handleChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newAlignment: string | null
+  ) => {
+    if (newAlignment !== null) {
+      setAlignment(newAlignment); // Update the alignment state
+    }
+  };
   return (
     <Grid2 container spacing={2} sx={{ height: '100vh' }}>
       <Grid2 size={3}>
@@ -51,7 +69,7 @@ function Main() {
             padding: '20px',
           }}
         >
-          <Sidebar classNames={classNames}/>
+          <Sidebar classNames={classNames} handleChange={handleChange} alignment={alignment} extDependencies={extDependencies}/>
         </Box>
       </Grid2>
 
@@ -68,7 +86,7 @@ function Main() {
             padding: '20px',
           }}
         >
-          <GraphWhiteBoard/>
+            <GraphWhiteBoard  jsonData={response} alignment={alignment}/>
         </Box>
       </Grid2>
     </Grid2>
