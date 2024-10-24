@@ -39,6 +39,7 @@ public class DependencyHandler {
         String jarFilePath = projectDir + File.separator + file.getOriginalFilename(); // Use the original filename from the uploaded file
         FileProps.setFilePath(jarFilePath);
         UserProject userProject = new UserProject();
+        userProject.classContainer = classContainer;
 
         // Save the uploaded JAR file to this project's folder
         try (InputStream fileInputStream = file.getInputStream();
