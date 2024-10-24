@@ -1,7 +1,7 @@
 import { Typography } from '@mui/material'
 import React from 'react'
 import dagre from 'dagre';
-import { ChangeEventHandler, useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { ReactFlow, 
     useNodesState,
     useEdgesState,
@@ -11,9 +11,35 @@ import { ReactFlow,
 
 import '@xyflow/react/dist/style.css';
 import { Container, Box } from '@mui/material';
+import { ClassContainer } from '../mainpage/Main';
 
-import { initialNodes } from './Nodes';
-import { initialEdges } from './Edges';
+// interfaces
+export interface GraphWhiteBoardProps {
+  jsonData: ClassContainer
+
+}
+export interface NodeData extends Record<string, unknown> {
+  label: string;
+}
+
+export interface Position {
+  x: number;
+  y: number;
+}
+
+export interface Node {
+  id: string; // Unique identifier for the node
+  type: string; // Type of the node (e.g., 'input', 'output')
+  position: Position; // Position of the node on the canvas
+  data: NodeData; // Custom data associated with the node (e.g., the label)
+}
+
+export interface Edge {
+  id: string; // Unique identifier for the edge
+  source: string; // ID of the source node
+  target: string; // ID of the target node
+  label?: string; // Optional label describing the relationship (e.g., 'inheritance', 'composition')
+}
 
 // implementaiton of dagre in the graph 
 const dagreGraph = new dagre.graphlib.Graph();
@@ -51,7 +77,9 @@ const getLayoutedElements = (nodes: any, edges: any) => {
   return { nodes, edges };
 };
 
-function GraphWhiteBoard() {
+const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({jsonData}) =>  {
+  const initialNodes: Node[] = [];
+  const initialEdges: Edge[] = [];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
@@ -60,18 +88,52 @@ function GraphWhiteBoard() {
     [setEdges],
   );
 
-  // running dagre in nodes
+  // setting up nodes list
   useEffect(() => {
-    const layoutedElements = getLayoutedElements(nodes, edges);
+    const nodesList: Node[] = [];
+    const edgesList: Edge[] = [];
+
+    // creating nodes and edges from the jsonData
+    jsonData.userClassList.forEach((classItem) => {
+      nodesList.push({
+        id: classItem.name.split('.').pop()!,
+        type: 'default',
+        data: { label: classItem.name.split('.').pop()! },
+        position: { x: 0, y: 0 }, // temporary position, will be set by dagre layout
+      });
+
+      // creating inheritance edges
+      if (classItem.inherits) {
+        edgesList.push({
+          id: `e-${classItem.name}-${classItem.inherits}`,
+          source: classItem.name.split('.').pop()!,
+          target: classItem.inherits.split('.').pop()!,
+          label: 'inheritance',
+        });
+      }
+
+      // creating implementation edges
+      if (classItem.implementationList.length > 0) {
+        classItem.implementationList.forEach((implClass) => {
+          edgesList.push({
+            id: `e-${classItem.name}-${implClass}`,
+            source: classItem.name.split('.').pop()!,
+            target: implClass.split('.').pop()!,
+            label: 'implementation',
+          });
+        });
+      }
+    });
+    const layoutedElements = getLayoutedElements(nodesList, edgesList);
     setNodes([...layoutedElements.nodes]);
     setEdges([...layoutedElements.edges]);
-  }, []);
+  }, [setNodes, setEdges]);
 
   return (
     <div>
       {/* graph goes here */}
       <Typography variant="h4" gutterBottom>
-            Dependency Graph 
+            Internal Dependency Graph 
           </Typography>
           <Typography variant="body1" paragraph>
             <Container fixed>
