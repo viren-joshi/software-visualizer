@@ -13,10 +13,9 @@ import '@xyflow/react/dist/style.css';
 import { Container, Box } from '@mui/material';
 import { ClassContainer } from '../mainpage/Main';
 
-// interfaces
 export interface GraphWhiteBoardProps {
-  jsonData: ClassContainer
-
+  jsonData: ClassContainer,
+  alignment :String;
 }
 export interface NodeData extends Record<string, unknown> {
   label: string;
@@ -32,9 +31,7 @@ export interface Node {
   type: string; // Type of the node (e.g., 'input', 'output')
   position: Position; // Position of the node on the canvas
   data: NodeData; // Custom data associated with the node (e.g., the label)
-}
-
-export interface Edge {
+}export interface Edge {
   id: string; // Unique identifier for the edge
   source: string; // ID of the source node
   target: string; // ID of the target node
@@ -77,7 +74,9 @@ const getLayoutedElements = (nodes: any, edges: any) => {
   return { nodes, edges };
 };
 
-const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({jsonData}) =>  {
+const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
+}) =>  {
+
   const initialNodes: Node[] = [];
   const initialEdges: Edge[] = [];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -132,7 +131,7 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({jsonData}) =>  {
   return (
     <div>
       {/* graph goes here */}
-      <Typography variant="h4" gutterBottom>
+      {alignment === 'internal' ? <> <Typography variant="h4" gutterBottom>
             Internal Dependency Graph 
           </Typography>
           <Typography variant="body1" paragraph>
@@ -155,7 +154,7 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({jsonData}) =>  {
             </Box>
             
         </Container>
-          </Typography>
+          </Typography> </> : <><Typography variant="h4" gutterBottom>External Dependency Graph</Typography></> }
     </div>
   )
 }
