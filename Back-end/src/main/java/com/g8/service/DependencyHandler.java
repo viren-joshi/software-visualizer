@@ -1,20 +1,21 @@
 package com.g8.service;
+
 import com.g8.model.*;
 import com.g8.properties.FileProps;
+import com.google.gson.Gson;
 import javassist.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -22,24 +23,18 @@ import java.util.jar.JarInputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.gson.Gson;
-
 @Service
 public class DependencyHandler {
 
     // stores the package name that has all the user classes
     private static String USER_CLASS_CONTAINER;
+    private UserProject userProject;
 
-    public String analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
+    public DependencyHandler() {
+        this.userProject = new UserProject();
+    }
 
-        USER_CLASS_CONTAINER = classContainer;
-
-        // Get current project directory
-        String projectDir = System.getProperty("user.dir");
-        String jarFilePath = projectDir + File.separator + file.getOriginalFilename(); // Use the original filename from the uploaded file
-        FileProps.setFilePath(jarFilePath);
-        UserProject userProject = new UserProject();
-        userProject.classContainer = classContainer;
+    protected void saveFile(MultipartFile file, String jarFilePath) throws Exception{
 
         // Save the uploaded JAR file to this project's folder
         try (InputStream fileInputStream = file.getInputStream();
@@ -52,14 +47,17 @@ public class DependencyHandler {
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
+        } catch (Exception e) {
+            System.out.println("Error while saving file: ====");
+            e.printStackTrace();
+            throw e;
         }
+    }
 
-        // Accessing the jar file
+    protected void analyzeFile(String jarFilePath) throws Exception {
+
         try (InputStream fileInputStream = new FileInputStream(FileProps.getFilePath());
              JarInputStream jarStream = new JarInputStream(fileInputStream)) {
-
-            // Creating a UserProject Object
-
 
             // Initialize ClassPool
             ClassPool pool = ClassPool.getDefault();
@@ -71,7 +69,6 @@ public class DependencyHandler {
 
                 // [Debug] Checking if pom file exists in the jar file.
                 if(entry.getName().endsWith("pom.xml")) {
-                    System.out.println("Found pom.xml file at " + entry.getName());
                     extractExternalDependencies(FileProps.getFilePath(), entry, userProject);
                 }
 
@@ -89,34 +86,59 @@ public class DependencyHandler {
 
                     try {
 
-                        System.out.println("Analyzing user class: " + className);
                         // Load the class using ClassPool
                         CtClass ctClass = pool.getCtClass(className);
+
                         UserClass userClass = extractClassDependencies(ctClass);
-                        userProject.userClassList.add(userClass);
+                        userProject.getUserClassList().add(userClass);
 
                     } catch (javassist.NotFoundException e) {
+
                         // Handle case where class cannot be found
-                        System.err.println("Class not found in ClassPool: " + className);
+                        System.out.println("Class not found in ClassPool: " + className);
                         e.printStackTrace();
+
                     } catch (Exception e) {
+
                         // Log other exceptions for better understanding
-                        System.err.println("Failed to analyze class: " + className + " - " + e.getMessage());
+                        System.out.println("Failed to analyze class: " + className + " - " + e.getMessage());
                         e.printStackTrace();
+
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error while analyzing project: ");
+            System.out.println("Error while analyzing project: ");
             e.printStackTrace();
             throw e;
         }
+    }
 
-        // extract external dependency
-//        extractExternalDependencies(FileProps.getFilePath(), result);
+    public String analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
 
-        Gson gson = new Gson();
-        return gson.toJson(userProject);
+        USER_CLASS_CONTAINER = classContainer;
+
+        if (!file.getOriginalFilename().endsWith(".jar")) {
+            return "The uploaded file is not a JAR file. Please upload a valid JAR file.";
+        }
+
+        // Get current project directory
+        String projectDir = System.getProperty("user.dir");
+
+        // Use the original filename from the uploaded file
+        String jarFilePath = projectDir + File.separator + file.getOriginalFilename();
+
+        FileProps.setFilePath(jarFilePath);
+        userProject.setClassContainer(classContainer);
+
+        saveFile(file, jarFilePath);
+
+        analyzeFile(jarFilePath);
+
+//        Gson gson = new Gson();
+//        return gson.toJson(userProject);
+
+        return "Project uploaded and analyzed successfully";
     }
 
     // Extract external dependencies
@@ -161,7 +183,7 @@ public class DependencyHandler {
                         }
                     }
                     ExternalDependency externalDependency = gson.fromJson(extDep.toString(), ExternalDependency.class);
-                    userProject.externalDependencyList.add(externalDependency);
+                    userProject.getExternalDependencyList().add(externalDependency);
 
                 }
             }
@@ -171,7 +193,7 @@ public class DependencyHandler {
     }
 
     // analyzes internal dependencies
-    private UserClass extractClassDependencies(CtClass ctClass) throws Exception{
+    protected UserClass extractClassDependencies(CtClass ctClass) throws Exception{
         UserClass userClass = getUserClass(ctClass);
         userClass.name = ctClass.getName();
 
@@ -198,7 +220,7 @@ public class DependencyHandler {
         return userClass;
     }
 
-    private UserClass getUserClass(CtClass ctClass) throws ClassNotFoundException {
+    protected UserClass getUserClass(CtClass ctClass) throws ClassNotFoundException {
         // Check if the class is a Controller Class.
         Object[] classAnnotations = ctClass.getAnnotations();
         for (Object annotation : classAnnotations) {
@@ -212,7 +234,7 @@ public class DependencyHandler {
         return new UserClass();
     }
 
-    private ClassType getClassType (CtClass ctClass) {
+    protected ClassType getClassType(CtClass ctClass) {
         if(ctClass.isInterface()) {
             return ClassType.interfaceClass;
         } else if (Modifier.isAbstract(ctClass.getModifiers())) {
@@ -236,7 +258,7 @@ public class DependencyHandler {
         }
     }
 
-    private void extractInheritance(CtClass ctClass, UserClass userClass) throws NotFoundException {
+    protected void extractInheritance(CtClass ctClass, UserClass userClass) throws NotFoundException {
 
         CtClass superclass = ctClass.getSuperclass();
         if (superclass != null && superclass.getName().startsWith(USER_CLASS_CONTAINER)) {
@@ -244,7 +266,7 @@ public class DependencyHandler {
         }
     }
 
-    private void extractImplementation(CtClass ctClass, UserClass result) throws NotFoundException {
+    protected void extractImplementation(CtClass ctClass, UserClass result) throws NotFoundException {
 
         for (CtClass iClass : ctClass.getInterfaces()) {
             if (iClass.getName().startsWith(USER_CLASS_CONTAINER)) {
@@ -253,7 +275,7 @@ public class DependencyHandler {
         }
     }
 
-    private void extractMethods(CtClass ctClass, UserClass userClass) throws ClassNotFoundException {
+    protected void extractMethods(CtClass ctClass, UserClass userClass) throws ClassNotFoundException {
         for (CtMethod method : ctClass.getDeclaredMethods()) {
             ClassMethod classMethod;
             classMethod = new ClassMethod();
@@ -277,14 +299,14 @@ public class DependencyHandler {
         }
     }
 
-    private void extractNestedClasses(CtClass ctClass, UserClass userClass) throws Exception {
+    protected void extractNestedClasses(CtClass ctClass, UserClass userClass) throws Exception {
         for (CtClass innerClass : ctClass.getDeclaredClasses()) {
             userClass.nestedClassesList.add(extractClassDependencies(innerClass));
         }
     }
 
-
-    private void extractVariables(CtClass ctClass, UserClass userClass) throws NotFoundException, ClassNotFoundException {
+    // Tests done
+    protected void extractVariables(CtClass ctClass, UserClass userClass) throws NotFoundException, ClassNotFoundException {
         for(CtField field : ctClass.getDeclaredFields()) {
             ClassVariable classVariable = new ClassVariable();
             classVariable.datatype = field.getType().getName();
@@ -301,9 +323,8 @@ public class DependencyHandler {
         }
     }
 
-
-
-    private String getEndpointFromAnnotation(String annotation) {
+    // Tests done
+    protected String getEndpointFromAnnotation(String annotation) {
         Pattern pattern = Pattern.compile("value=\\{?\"?([^\"]+)\"?}?"); // Matches the value
         Matcher matcher = pattern.matcher(annotation);
         if(matcher.find()) {
@@ -311,5 +332,9 @@ public class DependencyHandler {
         }
         // In-case the regex doesn't work.
         return "/";
+    }
+
+    protected UserProject getUserProject() {
+        return this.userProject;
     }
 }

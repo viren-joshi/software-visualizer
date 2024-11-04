@@ -27,5 +27,4 @@ public class UploadController {
             return ResponseEntity.status(500).body("Failed to analyze project: " + e.getMessage());
         }
     }
-
 }
