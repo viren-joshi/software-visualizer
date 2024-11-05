@@ -1,5 +1,8 @@
 package com.g8.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.g8.model.ClassType;
 import com.g8.model.ClassVariable;
 import com.g8.model.UserClass;
@@ -11,7 +14,10 @@ import javassist.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.FileInputStream;
+import java.util.function.Supplier;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -249,6 +255,28 @@ public class DependencyHandlerTest {
 
         // Verify that nestedClassesList remains empty
         assertEquals(0, userClass.nestedClassesList.size());
+    }
+
+    @Test
+    public void testGetInternalDependencies() throws JsonProcessingException {
+        assertJsonNotEmpty(() -> dependencyHandler.getInternalDependencies());
+    }
+
+    @Test
+    public void testGetClassList() throws JsonProcessingException {
+        assertJsonNotEmpty(() -> dependencyHandler.getClassList());
+    }
+
+    @Test
+    public void testGetExternalDependencies() throws JsonProcessingException {
+        assertJsonNotEmpty(() -> dependencyHandler.getExternalDependencies());
+    }
+
+    private void assertJsonNotEmpty(Supplier<String> jsonSupplier) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonString = jsonSupplier.get();
+        JsonNode jsonNode = objectMapper.readTree(jsonString);
+        assertFalse(jsonNode.isEmpty(), "JSON response should not be empty.");
     }
 
 }

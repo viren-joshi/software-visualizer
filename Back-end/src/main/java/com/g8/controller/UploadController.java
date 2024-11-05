@@ -27,4 +27,19 @@ public class UploadController {
             return ResponseEntity.status(500).body("Failed to analyze project: " + e.getMessage());
         }
     }
+
+    @GetMapping("/intDep")
+    public ResponseEntity<String> getInternalDependencies() {
+        return ResponseEntity.ok("");
+    }
+
+    @GetMapping("/extDep")
+    public ResponseEntity<String> getExternalDependencies() {
+        return ResponseEntity.ok("");
+    }
+
+    @GetMapping("/classList")
+    public ResponseEntity<String> getClasses() {
+        return ResponseEntity.ok("");
+    }
 }

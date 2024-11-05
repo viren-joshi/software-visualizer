@@ -337,4 +337,16 @@ public class DependencyHandler {
     protected UserProject getUserProject() {
         return this.userProject;
     }
+
+    protected String getInternalDependencies() {
+        return "";
+    }
+
+    protected String getExternalDependencies() {
+        return "";
+    }
+
+    protected String getClassList() {
+        return "";
+    }
 }
