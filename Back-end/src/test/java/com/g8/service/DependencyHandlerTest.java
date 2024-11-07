@@ -3,10 +3,7 @@ package com.g8.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.g8.model.ClassType;
-import com.g8.model.ClassVariable;
-import com.g8.model.UserClass;
-import com.g8.model.UserControllerClass;
+import com.g8.model.*;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.Modifier;
@@ -14,10 +11,8 @@ import javassist.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.FileInputStream;
 import java.util.function.Supplier;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -28,6 +23,7 @@ public class DependencyHandlerTest {
     private MultipartFile mockFile;
     private CtClass mockCtClass;
     private CtField mockCtField;
+    // standard we are using for our test jar files. All the jar files will have the same container name.
     private final String classContainer = "com.blog";
 
     @BeforeEach
@@ -167,7 +163,7 @@ public class DependencyHandlerTest {
         
         dependencyHandler.extractVariables(mockCtClass, userClass);
         
-        assertEquals(0, userClass.variableList.size(), "Expected no variables to be extracted.");
+        assertTrue(userClass.variableList.isEmpty(), "Expected no variables to be extracted.");
     }
 
     // Test for the data type of the variables
@@ -233,11 +229,10 @@ public class DependencyHandlerTest {
 
         UserClass userClass = new UserClass();
 
-        // Execute the method
         dependencyHandler.extractInheritance(mockCtClass, userClass);
 
         // Verify no inheritance was set
-        assertEquals("", userClass.inherits);
+        assertTrue(userClass.inherits.isEmpty());
     }
 
     // Test for classes with no nested classes
@@ -254,7 +249,7 @@ public class DependencyHandlerTest {
         dependencyHandler.extractNestedClasses(mockCtClass, userClass);
 
         // Verify that nestedClassesList remains empty
-        assertEquals(0, userClass.nestedClassesList.size());
+        assertTrue(userClass.nestedClassesList.isEmpty());
     }
 
     @Test
@@ -273,10 +268,18 @@ public class DependencyHandlerTest {
     }
 
     private void assertJsonNotEmpty(Supplier<String> jsonSupplier) throws JsonProcessingException {
+
+        UserProject tempProject = new UserProject();
+
+        // Mock data for user class list and external dependencies
+        tempProject.getUserClassList().add(new UserClass());
+        tempProject.getExternalDependencyList().add(new ExternalDependency());
+        dependencyHandler.setUserProject(tempProject);
+
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonString = jsonSupplier.get();
         JsonNode jsonNode = objectMapper.readTree(jsonString);
-        assertFalse(jsonNode.isEmpty(), "JSON response should not be empty.");
+        assertFalse(jsonNode.isEmpty(), "JSON response can not be empty because even an empty project has at least one class otherwise making jar wouldn't be possible.");
     }
 
 }

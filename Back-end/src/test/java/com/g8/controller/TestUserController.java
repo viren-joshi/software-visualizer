@@ -1,15 +1,20 @@
 package com.g8.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.g8.model.ExternalDependency;
+import com.g8.model.UserClass;
+import com.g8.model.UserProject;
 import com.g8.service.DependencyHandler;
+import com.google.gson.Gson;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,6 +28,21 @@ public class TestUserController {
     private DependencyHandler dependencyHandler;
 
     private String baseURL = "http://localhost:8080/initialize";
+
+    @BeforeEach
+    public void setUp() {
+
+        UserProject tempProject = new UserProject();
+
+        // Mock data for user class list and external dependencies
+        tempProject.getUserClassList().add(new UserClass());
+        tempProject.getExternalDependencyList().add(new ExternalDependency());
+
+        when(dependencyHandler.getUserProject()).thenReturn(tempProject);
+        when(dependencyHandler.getInternalDependencies()).thenReturn(new Gson().toJson(tempProject.getUserClassList()));
+        when(dependencyHandler.getExternalDependencies()).thenReturn(new Gson().toJson(tempProject.getExternalDependencyList()));
+        when(dependencyHandler.getClassList()).thenReturn(new Gson().toJson(tempProject.getUserClassList()));
+    }
 
     @Test
     public void testGetInternalDependencies() throws Exception {
@@ -40,6 +60,7 @@ public class TestUserController {
     }
 
     private void testAssertNonEmptyJson(String endpoint) throws Exception {
+
         mockMvc.perform(get(baseURL + endpoint)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())

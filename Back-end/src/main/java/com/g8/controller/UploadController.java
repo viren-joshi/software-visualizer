@@ -30,16 +30,19 @@ public class UploadController {
 
     @GetMapping("/intDep")
     public ResponseEntity<String> getInternalDependencies() {
-        return ResponseEntity.ok("");
+        String response = dependencyHandler.getInternalDependencies();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/extDep")
     public ResponseEntity<String> getExternalDependencies() {
-        return ResponseEntity.ok("");
+        String response = dependencyHandler.getExternalDependencies();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/classList")
     public ResponseEntity<String> getClasses() {
-        return ResponseEntity.ok("");
+        String response = dependencyHandler.getClassList();
+        return ResponseEntity.ok(response);
     }
 }

@@ -334,19 +334,24 @@ public class DependencyHandler {
         return "/";
     }
 
-    protected UserProject getUserProject() {
+    public UserProject getUserProject() {
         return this.userProject;
     }
 
-    protected String getInternalDependencies() {
-        return "";
+    public String getInternalDependencies() {
+        return new Gson().toJson(userProject.getUserClassList());
     }
 
-    protected String getExternalDependencies() {
-        return "";
+    public String getExternalDependencies() {
+        return new Gson().toJson(userProject.getExternalDependencyList());
     }
 
-    protected String getClassList() {
-        return "";
+    public String getClassList() {
+        return new Gson().toJson(userProject.getUserClassList());
     }
+
+    protected void setUserProject(UserProject userProject) {
+        this.userProject = userProject;
+    }
+
 }
