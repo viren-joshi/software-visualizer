@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UploadController.class)
-public class TestUserController {
+public class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,13 +35,13 @@ public class TestUserController {
         UserProject tempProject = new UserProject();
 
         // Mock data for user class list and external dependencies
-        tempProject.getUserClassList().add(new UserClass());
+        tempProject.getInternalDependencyList().add(new UserClass());
         tempProject.getExternalDependencyList().add(new ExternalDependency());
 
         when(dependencyHandler.getUserProject()).thenReturn(tempProject);
-        when(dependencyHandler.getInternalDependencies()).thenReturn(new Gson().toJson(tempProject.getUserClassList()));
+        when(dependencyHandler.getInternalDependencies()).thenReturn(new Gson().toJson(tempProject.getInternalDependencyList()));
         when(dependencyHandler.getExternalDependencies()).thenReturn(new Gson().toJson(tempProject.getExternalDependencyList()));
-        when(dependencyHandler.getClassList()).thenReturn(new Gson().toJson(tempProject.getUserClassList()));
+        when(dependencyHandler.getClassList()).thenReturn(new Gson().toJson(tempProject.getInternalDependencyList()));
     }
 
     @Test

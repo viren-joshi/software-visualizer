@@ -90,7 +90,8 @@ public class DependencyHandler {
                         CtClass ctClass = pool.getCtClass(className);
 
                         UserClass userClass = extractClassDependencies(ctClass);
-                        userProject.getUserClassList().add(userClass);
+                        userProject.getClassNames().add(userClass.name);
+                        userProject.getInternalDependencyList().add(userClass);
 
                     } catch (javassist.NotFoundException e) {
 
@@ -339,7 +340,7 @@ public class DependencyHandler {
     }
 
     public String getInternalDependencies() {
-        return new Gson().toJson(userProject.getUserClassList());
+        return new Gson().toJson(userProject.getInternalDependencyList());
     }
 
     public String getExternalDependencies() {
@@ -347,7 +348,7 @@ public class DependencyHandler {
     }
 
     public String getClassList() {
-        return new Gson().toJson(userProject.getUserClassList());
+        return new Gson().toJson(userProject.getClassNames());
     }
 
     protected void setUserProject(UserProject userProject) {

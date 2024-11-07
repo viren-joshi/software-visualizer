@@ -1,18 +1,19 @@
 package com.g8.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class UserProject {
     private String classContainer;
-    private List<UserClass> userClassList;
+    private List<UserClass> internalDependencyList;
     private List<ExternalDependency> externalDependencyList;
+    private List<String> classNames;
 
     public UserProject () {
         classContainer = "";
-        userClassList = new ArrayList<>();
+        internalDependencyList = new ArrayList<>();
         externalDependencyList = new ArrayList<>();
+        classNames = new ArrayList<>();
     }
 
     public String getClassContainer() {
@@ -23,12 +24,12 @@ public class UserProject {
         this.classContainer = classContainer;
     }
 
-    public List<UserClass> getUserClassList() {
-        return userClassList;
+    public List<UserClass> getInternalDependencyList() {
+        return internalDependencyList;
     }
 
-    public void setUserClassList(List<UserClass> userClassList) {
-        this.userClassList = userClassList;
+    public void setInternalDependencyList(List<UserClass> internalDependencyList) {
+        this.internalDependencyList = internalDependencyList;
     }
 
     public List<ExternalDependency> getExternalDependencyList() {
@@ -37,5 +38,13 @@ public class UserProject {
 
     public void setExternalDependencyList(List<ExternalDependency> externalDependencyList) {
         this.externalDependencyList = externalDependencyList;
+    }
+
+    public List<String> getClassNames() {
+        return classNames;
+    }
+
+    public void setClassNames(List<String> classNames) {
+        this.classNames = classNames;
     }
 }
