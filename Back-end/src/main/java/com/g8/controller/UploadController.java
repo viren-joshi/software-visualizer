@@ -28,4 +28,21 @@ public class UploadController {
         }
     }
 
+    @GetMapping("/intDep")
+    public ResponseEntity<String> getInternalDependencies() {
+        String response = dependencyHandler.getInternalDependencies();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/extDep")
+    public ResponseEntity<String> getExternalDependencies() {
+        String response = dependencyHandler.getExternalDependencies();
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/classList")
+    public ResponseEntity<String> getClasses() {
+        String response = dependencyHandler.getClassList();
+        return ResponseEntity.ok(response);
+    }
 }
