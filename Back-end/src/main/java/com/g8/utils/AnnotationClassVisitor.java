@@ -111,8 +111,6 @@ public class AnnotationClassVisitor extends ClassVisitor {
     public String getFieldType(String descriptor) {
 
         // Handle primitive types directly
-
-
         String fieldType = descriptor.replace('/', '.').replace(";", "");
 
         // Handle array types
@@ -172,4 +170,3 @@ public class AnnotationClassVisitor extends ClassVisitor {
         return methodInfoList;
     }
 }
-

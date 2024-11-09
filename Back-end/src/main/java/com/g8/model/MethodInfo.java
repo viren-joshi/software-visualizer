@@ -9,6 +9,15 @@ public class MethodInfo {
     private List<String> annotations = new ArrayList<>();
     private boolean isStatic;
 
+    public MethodInfo() {
+    }
+
+    public MethodInfo(String methodName, List<String> annotations, boolean isStatic) {
+        this.methodName = methodName;
+        this.annotations = annotations;
+        this.isStatic = isStatic;
+    }
+
     public String getMethodName() {
         return methodName;
     }
