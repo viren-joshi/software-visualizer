@@ -10,6 +10,17 @@ public class FieldInfo {
     private boolean isStatic;
     private boolean isAnnotated;
 
+    public FieldInfo() {
+    }
+
+    public FieldInfo(String identifier, String datatype, List<String> annotationList, boolean isStatic, boolean isAnnotated) {
+        this.identifier = identifier;
+        this.datatype = datatype;
+        this.annotationList = annotationList;
+        this.isStatic = isStatic;
+        this.isAnnotated = isAnnotated;
+    }
+
     // Getters and setters
     public String getIdentifier() {
         return identifier;
