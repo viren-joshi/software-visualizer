@@ -21,10 +21,20 @@ public class MethodAnnotationVisitor extends MethodVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-        return new PrintAnnotationVisitor(descriptor);
+        String annotationName = descriptor.replace('/', '.').replace(";", "");
+        annotationName = "@" + annotationName.substring(1);
+        PrintAnnotationVisitor annotationVisitor = new PrintAnnotationVisitor(annotationName);
+        annotations.add(annotationVisitor);
+        return annotationVisitor;
     }
 
     @Override
     public void visitEnd() {
+        for (PrintAnnotationVisitor annotationVisitor : annotations) {
+            String fullAnnotation = annotationVisitor.getFullAnnotation();
+            currentMethod.getAnnotations().add(fullAnnotation);
+        }
+        // Reset list for the next visit
+        annotations.clear();
     }
 }
