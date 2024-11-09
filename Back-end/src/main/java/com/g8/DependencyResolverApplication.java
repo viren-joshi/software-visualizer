@@ -1,6 +1,6 @@
 package com.g8;
 
-import com.g8.properties.FileProps;
+import com.g8.utils.FileProps;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

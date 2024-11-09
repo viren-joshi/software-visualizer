@@ -33,13 +33,13 @@ public class UploadController {
         String response = dependencyHandler.getInternalDependencies();
         return ResponseEntity.ok(response);
     }
-
-    @GetMapping("/extDep")
-    public ResponseEntity<String> getExternalDependencies() {
-        String response = dependencyHandler.getExternalDependencies();
-        return ResponseEntity.ok(response);
-    }
-
+//
+//    @GetMapping("/extDep")
+//    public ResponseEntity<String> getExternalDependencies() {
+//        String response = dependencyHandler.getExternalDependencies();
+//        return ResponseEntity.ok(response);
+//    }
+//
     @GetMapping("/classList")
     public ResponseEntity<String> getClasses() {
         String response = dependencyHandler.getClassList();
