@@ -2,6 +2,7 @@ package com.g8.service;
 
 import com.g8.model.ClassInfo;
 import com.g8.utils.AnnotationClassVisitor;
+import com.g8.utils.FileProps;
 import com.google.gson.Gson;
 import org.objectweb.asm.ClassReader;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,9 @@ public class DependencyHandler {
     private Map<String, ClassInfo> classInfoMap;
     private Map<String, List<String>> parentClassToNestedClassesMap;
     private String internalDep;
+    private String externalDep;
+    private Gson gson = new Gson();
+
 
     public DependencyHandler() {
         this.allClassInfoList = new ArrayList<>();
@@ -56,32 +60,40 @@ public class DependencyHandler {
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
             jarFile.stream()
-                    .filter(entry -> entry.getName().endsWith(".class"))
-                    .filter(entry -> entry.getName().contains(USER_PACKAGE_PREFIX))// Filter before processing
-                    .forEach(entry -> {
+                .forEach(entry -> {
+                    if (entry.getName().endsWith(".class") && entry.getName().contains(USER_PACKAGE_PREFIX)) {
                         try {
                             processClassEntry(jarFile, entry);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                    });
+                    }
+
+                    if (entry.getName().endsWith("pom.xml")) {
+                        try {
+                            externalDep = analyzePomDependencies(entry, jarFile);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                });
         }
 
         for(Map.Entry<String, List<String>> entry : parentClassToNestedClassesMap.entrySet()) {
             classInfoMap.get(entry.getKey()).setNestedClassesList(entry.getValue());
         }
 
-        Gson gson = new Gson();
-        internalDep = gson.toJson(allClassInfoList);  // Convert the entire list of ClassInfo objects to JSON
+        // Convert the entire list of ClassInfo objects to JSON
+        internalDep = gson.toJson(allClassInfoList);
     }
 
     void processClassEntry(JarFile jarFile, JarEntry entry) throws Exception {
+
         try (InputStream inputStream = jarFile.getInputStream(entry)) {
             ClassReader classReader = new ClassReader(inputStream);
             AnnotationClassVisitor visitor = new AnnotationClassVisitor(parentClassToNestedClassesMap);
             classReader.accept(visitor, 0);
 
-            // After processing, convert to JSON using Gson
             ClassInfo classInfo = visitor.getClassInfo();
             classInfoMap.put(classInfo.getName(), classInfo);
             allClassInfoList.add(classInfo);
@@ -102,11 +114,20 @@ public class DependencyHandler {
         // Use the original filename from the uploaded file
         String jarFilePath = projectDir + File.separator + file.getOriginalFilename();
 
+        FileProps.setFilePath(jarFilePath);
+
         saveFile(file, jarFilePath);
 
         analyzeFile(jarFilePath);
 
         return new ResponseEntity<>("Success", HttpStatus.OK);
+    }
+
+    public String analyzePomDependencies(JarEntry entry, JarFile jar) throws Exception {
+
+        List<Map<String, String>> dependenciesList = new ArrayList<>();
+
+        return gson.toJson(dependenciesList);
     }
 
     public String getInternalDependencies() {
@@ -121,5 +142,7 @@ public class DependencyHandler {
         this.USER_PACKAGE_PREFIX = val;
     }
 
-
+    public String getExternalDependencies() {
+        return this.externalDep;
+    }
 }

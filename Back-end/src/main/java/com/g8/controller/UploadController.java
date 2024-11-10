@@ -23,6 +23,7 @@ public class UploadController {
         try {
             return dependencyHandler.analyzeUploadedProject(file, classContainer);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body("Failed to analyze project");
         }
     }
@@ -32,13 +33,13 @@ public class UploadController {
         String response = dependencyHandler.getInternalDependencies();
         return ResponseEntity.ok(response);
     }
-//
-//    @GetMapping("/extDep")
-//    public ResponseEntity<String> getExternalDependencies() {
-//        String response = dependencyHandler.getExternalDependencies();
-//        return ResponseEntity.ok(response);
-//    }
-//
+
+    @GetMapping("/extDep")
+    public ResponseEntity<String> getExternalDependencies() {
+        String response = dependencyHandler.getExternalDependencies();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/classList")
     public ResponseEntity<String> getClasses() {
         String response = dependencyHandler.getClassList();

@@ -1,8 +1,11 @@
 package com.g8.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,8 +15,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class DependencyHandlerTest {
@@ -21,12 +29,68 @@ public class DependencyHandlerTest {
     private DependencyHandler dependencyHandler;
     private static final String TEST_CLASS_CONTAINER = "com/blog";
     private static final String TEST_JAR_FILE_NAME = "blog.jar";
-    private static final String TEST_JAR_FILE_PATH = "src" + File.separator + "test" + File.separator + "resources" + File.separator + TEST_JAR_FILE_NAME;
+    private static String TEST_JAR_FILE_PATH = "src" + File.separator + "test" + File.separator + "resources" + File.separator + TEST_JAR_FILE_NAME;
+
+    @Mock
+    private JarFile jarFile;
+
+    @Mock
+    private JarEntry jarEntry;
+
+    @Mock
+    private Dependency dependency;
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         dependencyHandler = new DependencyHandler();
+        objectMapper = new ObjectMapper();
         dependencyHandler.setUSER_PACKAGE_PREFIX(TEST_CLASS_CONTAINER);
+    }
+
+    @Test
+    void testAnalyzePomDependencies_entryIsNull() throws Exception {
+        String result = dependencyHandler.analyzePomDependencies(null, jarFile);
+
+        List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
+        assertTrue(resultList.isEmpty());
+    }
+
+    @Test
+    void testAnalyzePomDependencies_withDependencies() throws Exception {
+
+        when(dependency.getGroupId()).thenReturn("org.springframework");
+        when(dependency.getArtifactId()).thenReturn("spring-core");
+        when(dependency.getVersion()).thenReturn("5.3.10");
+        when(dependency.getScope()).thenReturn("compile");
+
+        String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
+
+        String expected = "[{\"groupId\":\"org.springframework\",\"scope\":\"compile\",\"artifactId\":\"spring-core\",\"version\":\"5.3.10\"}]";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testAnalyzePomDependencies_withNoDependencies() throws Exception {
+
+        String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
+
+        List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
+        assertTrue(resultList.isEmpty());
+    }
+
+    @Test
+    void testAnalyzePomDependencies_withNullVersionAndScope() throws Exception {
+
+        when(dependency.getGroupId()).thenReturn("org.example");
+        when(dependency.getArtifactId()).thenReturn("example-artifact");
+        when(dependency.getVersion()).thenReturn(null); // null version
+        when(dependency.getScope()).thenReturn(null);  // null scope
+
+        String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
+
+        String expected = "[{\"groupId\":\"org.example\",\"scope\":\"\",\"artifactId\":\"example-artifact\",\"version\":\"\"}]";
+        assertEquals(expected, result);
     }
 
     @Test
@@ -49,18 +113,18 @@ public class DependencyHandlerTest {
     }
 
     @Test
-    void testAnalyzeFile() throws Exception {
+    void testAnalyzeFile_withZeroClasses() throws Exception {
 
-        dependencyHandler.analyzeFile(TEST_JAR_FILE_PATH);
+        dependencyHandler.setUSER_PACKAGE_PREFIX("org/example");
+        TEST_JAR_FILE_PATH = "src/test/resources/empty-1.0-SNAPSHOT.jar";
 
-        assertFalse(dependencyHandler.getClassList().isEmpty());
+        assertDoesNotThrow(() -> dependencyHandler.analyzeFile(TEST_JAR_FILE_PATH));
     }
 
     @Test
     void testAnalyzeUploadedProject_shouldNotThrowException() throws Exception {
 
         // Mock DependencyHandler object and methods
-
         File file = new File(TEST_JAR_FILE_PATH);
         FileInputStream fileInputStream = new FileInputStream(file);
 
