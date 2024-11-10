@@ -1,7 +1,6 @@
 package com.g8.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.maven.model.Dependency;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,8 +10,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -37,8 +39,8 @@ public class DependencyHandlerTest {
     @Mock
     private JarEntry jarEntry;
 
-    @Mock
-    private Dependency dependency;
+    private InputStream pomInputStream;
+
     private ObjectMapper objectMapper;
 
     @BeforeEach
@@ -50,6 +52,7 @@ public class DependencyHandlerTest {
 
     @Test
     void testAnalyzePomDependencies_entryIsNull() throws Exception {
+
         String result = dependencyHandler.analyzePomDependencies(null, jarFile);
 
         List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
@@ -59,10 +62,9 @@ public class DependencyHandlerTest {
     @Test
     void testAnalyzePomDependencies_withDependencies() throws Exception {
 
-        when(dependency.getGroupId()).thenReturn("org.springframework");
-        when(dependency.getArtifactId()).thenReturn("spring-core");
-        when(dependency.getVersion()).thenReturn("5.3.10");
-        when(dependency.getScope()).thenReturn("compile");
+        pomInputStream = createMockPomStream(true, true, true, true, true);
+
+        when(jarFile.getInputStream(jarEntry)).thenReturn(pomInputStream);
 
         String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
 
@@ -73,23 +75,27 @@ public class DependencyHandlerTest {
     @Test
     void testAnalyzePomDependencies_withNoDependencies() throws Exception {
 
+        pomInputStream = createMockPomStream(false, false, false, false, false);
+
+        when(jarFile.getInputStream(jarEntry)).thenReturn(pomInputStream);
+
         String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
 
         List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
+        System.out.println(result);
         assertTrue(resultList.isEmpty());
     }
 
     @Test
     void testAnalyzePomDependencies_withNullVersionAndScope() throws Exception {
 
-        when(dependency.getGroupId()).thenReturn("org.example");
-        when(dependency.getArtifactId()).thenReturn("example-artifact");
-        when(dependency.getVersion()).thenReturn(null); // null version
-        when(dependency.getScope()).thenReturn(null);  // null scope
+        pomInputStream = createMockPomStream(true ,true, true, false, false);
+
+        when(jarFile.getInputStream(jarEntry)).thenReturn(pomInputStream);
 
         String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
 
-        String expected = "[{\"groupId\":\"org.example\",\"scope\":\"\",\"artifactId\":\"example-artifact\",\"version\":\"\"}]";
+        String expected = "[{\"groupId\":\"org.springframework\",\"scope\":\"\",\"artifactId\":\"spring-core\",\"version\":\"\"}]";
         assertEquals(expected, result);
     }
 
@@ -140,6 +146,46 @@ public class DependencyHandlerTest {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "test data".getBytes());
         ResponseEntity<String> result = dependencyHandler.analyzeUploadedProject(file, "com.g8.test");
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+    }
+
+    private InputStream createMockPomStream(boolean exists, boolean groupId, boolean artifactId, boolean version, boolean scope) {
+
+        String grp = "", artifact = "", ver = "", sc = "", depstart = "", depend = "";
+
+        if(exists) {
+            depstart = "<dependency>";
+            depend = "</dependency>";
+        }
+        if(groupId) {
+            grp = "<groupId>org.springframework</groupId>";
+        }
+
+        if(artifactId) {
+            artifact = "<artifactId>spring-core</artifactId>";
+        }
+
+        if(version) {
+            ver = "<version>5.3.10</version>";
+        }
+
+        if(scope) {
+            sc = "<scope>compile</scope>";
+        }
+
+        String pomXml =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                        "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" +
+                        "<modelVersion>4.0.0</modelVersion>" +
+                        "<dependencies>" +
+                        depstart +
+                        grp +
+                        artifact +
+                        ver +
+                        sc +
+                        depend +
+                        "</dependencies>" +
+                        "</project>";
+        return new ByteArrayInputStream(pomXml.getBytes(StandardCharsets.UTF_8));
     }
 }
 

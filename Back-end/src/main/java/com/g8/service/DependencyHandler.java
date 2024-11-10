@@ -1,15 +1,17 @@
 package com.g8.service;
 
 import com.g8.model.ClassInfo;
-import com.g8.utils.AnnotationClassVisitor;
+import com.g8.utils.ClassVisitor;
 import com.g8.utils.FileProps;
 import com.google.gson.Gson;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.objectweb.asm.ClassReader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -30,7 +32,7 @@ public class DependencyHandler {
     private Map<String, List<String>> parentClassToNestedClassesMap;
     private String internalDep;
     private String externalDep;
-    private Gson gson = new Gson();
+    private Gson gson;
 
 
     public DependencyHandler() {
@@ -38,6 +40,7 @@ public class DependencyHandler {
         this.classInfoMap = new HashMap<>();
         this.parentClassToNestedClassesMap = new HashMap<>();
         internalDep = null;
+        gson = new Gson();
     }
 
     protected void saveFile(MultipartFile file, String jarFilePath) throws Exception {
@@ -91,7 +94,7 @@ public class DependencyHandler {
 
         try (InputStream inputStream = jarFile.getInputStream(entry)) {
             ClassReader classReader = new ClassReader(inputStream);
-            AnnotationClassVisitor visitor = new AnnotationClassVisitor(parentClassToNestedClassesMap);
+            ClassVisitor visitor = new ClassVisitor(parentClassToNestedClassesMap);
             classReader.accept(visitor, 0);
 
             ClassInfo classInfo = visitor.getClassInfo();
@@ -126,6 +129,26 @@ public class DependencyHandler {
     public String analyzePomDependencies(JarEntry entry, JarFile jar) throws Exception {
 
         List<Map<String, String>> dependenciesList = new ArrayList<>();
+
+        if (entry != null) {
+            try (InputStream pomInputStream = jar.getInputStream(entry)) {
+                MavenXpp3Reader reader = new MavenXpp3Reader();
+                Model model = reader.read(pomInputStream);
+
+                // Extract dependencies
+                for (Dependency dependency : model.getDependencies()) {
+
+                    Map<String, String> dependencyMap = new HashMap<>();
+
+                    dependencyMap.put("groupId", dependency.getGroupId());
+                    dependencyMap.put("artifactId", dependency.getArtifactId());
+                    dependencyMap.put("version", dependency.getVersion() != null ? dependency.getVersion() : "");
+                    dependencyMap.put("scope", dependency.getScope() != null ? dependency.getScope() : "");
+
+                    dependenciesList.add(dependencyMap);
+                }
+            }
+        }
 
         return gson.toJson(dependenciesList);
     }

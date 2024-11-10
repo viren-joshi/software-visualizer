@@ -8,7 +8,7 @@ import org.objectweb.asm.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class AnnotationClassVisitor extends ClassVisitor {
+public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
 
     private ClassInfo classInfo;
     private List<MethodInfo> methodInfoList;
@@ -17,7 +17,7 @@ public class AnnotationClassVisitor extends ClassVisitor {
     private final List<PrintAnnotationVisitor> annotations;  // Temporary list
 
 
-    public AnnotationClassVisitor(Map<String, List<String>> map) {
+    public ClassVisitor(Map<String, List<String>> map) {
         super(Opcodes.ASM9);
         fieldInfoList = new ArrayList<>();
         methodInfoList = new ArrayList<>();

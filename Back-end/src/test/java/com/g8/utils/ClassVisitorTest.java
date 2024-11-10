@@ -10,17 +10,17 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AnnotationClassVisitorTest {
+public class ClassVisitorTest {
 
     private Map<String, List<String>> map;
-    private AnnotationClassVisitor classVisitor;
+    private ClassVisitor classVisitor;
     private String className;
     private String superName;
 
     @BeforeEach
     void setUp() {
         map  = new HashMap<>();
-        classVisitor = new AnnotationClassVisitor(map);
+        classVisitor = new ClassVisitor(map);
         className = "com/example/OuterClass";
         superName = "java/lang/Likeable";
     }
