@@ -4,6 +4,8 @@ import com.g8.model.ClassInfo;
 import com.g8.utils.AnnotationClassVisitor;
 import com.google.gson.Gson;
 import org.objectweb.asm.ClassReader;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,7 +59,6 @@ public class DependencyHandler {
                     .filter(entry -> entry.getName().endsWith(".class"))
                     .filter(entry -> entry.getName().contains(USER_PACKAGE_PREFIX))// Filter before processing
                     .forEach(entry -> {
-                        System.out.println(entry.getName());
                         try {
                             processClassEntry(jarFile, entry);
                         } catch (Exception e) {
@@ -87,12 +88,12 @@ public class DependencyHandler {
         }
     }
 
-    public String analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
+    public ResponseEntity<String> analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
 
         USER_PACKAGE_PREFIX = classContainer.replace(".", "/");
 
         if (!file.getOriginalFilename().endsWith(".jar")) {
-            return "The uploaded file is not a JAR file. Please upload a valid JAR file.";
+            return new ResponseEntity<>("Unsupported file", HttpStatus.BAD_REQUEST);
         }
 
         // Get current project directory
@@ -105,7 +106,7 @@ public class DependencyHandler {
 
         analyzeFile(jarFilePath);
 
-        return "Project uploaded and analyzed successfully";
+        return new ResponseEntity<>("Success", HttpStatus.OK);
     }
 
     public String getInternalDependencies() {

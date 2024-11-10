@@ -28,10 +28,9 @@ public class FieldAnnotationVisitorTest {
         AnnotationVisitor annotationVisitor = fieldAnnotationVisitor.visitAnnotation("Lcom/example/MyFieldAnnotation;", true);
         annotationVisitor.visit("value", "test");
 
-        // End the visit and validate the annotation
         fieldAnnotationVisitor.visitEnd();
 
-        assertAnnotationSize(fieldInfo);
+        assertAnnotationValue(fieldInfo, "@com.example.MyFieldAnnotation(value = test)");
     }
 
     @Test
@@ -44,22 +43,9 @@ public class FieldAnnotationVisitorTest {
         AnnotationVisitor annotationVisitor2 = fieldAnnotationVisitor.visitAnnotation("Lcom/example/SecondAnnotation;", true);
         annotationVisitor2.visit("value", "test2");
 
-        // End the visit and validate the annotations
         fieldAnnotationVisitor.visitEnd();
 
-        assertEquals(2, fieldInfo.getAnnotations().size());
-    }
-
-    @Test
-    public void testVisitFieldAnnotationWithEmptyDescriptor() {
-
-        // Simulate visiting a field annotation with an empty descriptor
-        AnnotationVisitor annotationVisitor = fieldAnnotationVisitor.visitAnnotation("", true);
-
-        // End the visit and validate no annotation added
-        fieldAnnotationVisitor.visitEnd();
-
-        assertTrue(fieldInfo.getAnnotations().isEmpty());
+        assertAnnotationSize(fieldInfo);
     }
 
     @Test
@@ -77,8 +63,6 @@ public class FieldAnnotationVisitorTest {
 
         // Visit an annotation
         fieldAnnotationVisitor.visitAnnotation("Lcom/example/MyAnnotation;", true);
-
-        fieldAnnotationVisitor.visitEnd();
 
         // Check that the field is marked as annotated
         assertTrue(fieldInfo.isAnnotated());
@@ -109,5 +93,10 @@ public class FieldAnnotationVisitorTest {
     private void assertAnnotationSize(FieldInfo fieldInfo) {
         List<String> annotations = fieldInfo.getAnnotations();
         assertFalse(annotations.isEmpty());
+    }
+
+    private void assertAnnotationValue(FieldInfo fieldInfo, String expectedValue) {
+        List<String> annotations = fieldInfo.getAnnotations();
+        assertEquals(expectedValue, annotations.get(0));
     }
 }

@@ -96,7 +96,6 @@ public class AnnotationClassVisitorTest {
 
         // Simulate visiting a static method
         classVisitor.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "myStaticMethod", "()V", null, null);
-
         // Verify that the method is added as static
         assertTrue(classVisitor.getMethodInfoList().get(0).isStatic());
     }
@@ -106,7 +105,6 @@ public class AnnotationClassVisitorTest {
 
         // Simulate visiting a field
         classVisitor.visitField(Opcodes.ACC_PRIVATE, "myField", "I", null, null);
-
         // Verify that the field is added to the list with correct details
         assertFalse(classVisitor.getFieldInfoList().isEmpty());
     }

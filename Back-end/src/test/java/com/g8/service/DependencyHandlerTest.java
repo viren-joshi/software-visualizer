@@ -4,6 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.File;
@@ -63,7 +65,7 @@ public class DependencyHandlerTest {
         FileInputStream fileInputStream = new FileInputStream(file);
 
         // Creating a MultipartFile from an existing file
-        MockMultipartFile mmf =  new MockMultipartFile(file.getName(), file.getName(), "text/plain", fileInputStream);
+        MockMultipartFile mmf =  new MockMultipartFile(file.getName(), file.getName(), "application/java-archive", fileInputStream);
 
         // Verify that saveFile and analyzeFile were called
         assertDoesNotThrow(() -> dependencyHandler.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
@@ -72,8 +74,8 @@ public class DependencyHandlerTest {
     @Test
     void testAnalyzeUploadedProject_shouldFail() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "test data".getBytes());
-        String result = dependencyHandler.analyzeUploadedProject(file, "com.g8.test");
-        assertEquals("The uploaded file is not a JAR file. Please upload a valid JAR file.", result);
+        ResponseEntity<String> result = dependencyHandler.analyzeUploadedProject(file, "com.g8.test");
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
     }
 }
 

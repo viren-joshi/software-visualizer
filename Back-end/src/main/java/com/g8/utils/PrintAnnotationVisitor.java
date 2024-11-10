@@ -28,11 +28,12 @@ public class PrintAnnotationVisitor extends AnnotationVisitor {
 
     @Override
     public void visitEnum(String name, String descriptor, String value) {
+
         // Extract and format enum values as "name = ENUM_VALUE"
+        descriptor = descriptor.substring(1).replace(";","");
         if(name == null) {
-            parameters.add(value);
+            parameters.add(descriptor + "." + value);
         } else {
-            descriptor = descriptor.substring(descriptor.lastIndexOf('/') + 1, descriptor.length() - 1);
             String enumValue = descriptor + "." + value.substring(value.lastIndexOf('/') + 1);
             parameters.add(String.format("%s = %s", name, enumValue));
         }
@@ -41,7 +42,8 @@ public class PrintAnnotationVisitor extends AnnotationVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String name, String descriptor) {
         // Handle nested annotations as "name = @NestedAnnotation"
-        parameters.add(String.format("%s = @%s", name, descriptor.replace('/', '.')));
+        descriptor = descriptor.substring(1).replace('/', '.').replace(";", "");
+        parameters.add(String.format("%s = @%s", name, descriptor));
         return this;
     }
 

@@ -21,10 +21,9 @@ public class UploadController {
     public ResponseEntity<String> uploadProject(@RequestParam("file") MultipartFile file, @RequestParam("classContainer") String classContainer) {
         
         try {
-            String result = dependencyHandler.analyzeUploadedProject(file, classContainer);
-            return ResponseEntity.ok(result);
+            return dependencyHandler.analyzeUploadedProject(file, classContainer);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to analyze project: " + e.getMessage());
+            return ResponseEntity.status(500).body("Failed to analyze project");
         }
     }
 

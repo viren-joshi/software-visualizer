@@ -38,7 +38,7 @@ public class PrintAnnotationVisitorTest {
         annotationVisitor.visitEnum("enumKey", "Lcom/example/Enum;", "ENUM_CONSTANT");
 
         // Check if the enum value is formatted correctly
-        assertEquals("MyAnnotation(enumKey = Enum.ENUM_CONSTANT)", annotationVisitor.getFullAnnotation());
+        assertEquals("MyAnnotation(enumKey = com/example/Enum.ENUM_CONSTANT)", annotationVisitor.getFullAnnotation());
     }
 
     @Test
@@ -47,7 +47,7 @@ public class PrintAnnotationVisitorTest {
         annotationVisitor.visitEnum(null, "Lcom/example/Enum;", "ENUM_CONSTANT");
 
         // Check if the enum value is added without a name
-        assertEquals("MyAnnotation(Enum.ENUM_CONSTANT)", annotationVisitor.getFullAnnotation());
+        assertEquals("MyAnnotation(com/example/Enum.ENUM_CONSTANT)", annotationVisitor.getFullAnnotation());
     }
 
     @Test
@@ -67,7 +67,7 @@ public class PrintAnnotationVisitorTest {
         annotationVisitor.visitAnnotation("nestedAnnotation", "Lcom/example/NestedAnnotation;");
 
         // Check if all elements are included in the formatted string
-        assertEquals("MyAnnotation(key1 = value1, enumKey = Enum.ENUM_CONSTANT, nestedAnnotation = @com.example.NestedAnnotation)", annotationVisitor.getFullAnnotation());
+        assertEquals("MyAnnotation(key1 = value1, enumKey = com/example/Enum.ENUM_CONSTANT, nestedAnnotation = @com.example.NestedAnnotation)", annotationVisitor.getFullAnnotation());
     }
 
     @Test

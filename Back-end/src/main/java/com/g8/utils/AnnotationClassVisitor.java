@@ -53,10 +53,12 @@ public class AnnotationClassVisitor extends ClassVisitor {
 
         // If the superName is not Object, set the inherits
         classInfo.setInherits("java/lang/Object".equals(superName) ? "" : superName.replace('/', '.'));
-        List<String> updatedInterfaces = Arrays.stream(interfaces)
-                .map(interfaceName -> interfaceName.replace('/', '.'))
-                .collect(Collectors.toList());
-        classInfo.setImplementationList(updatedInterfaces);
+        if(interfaces != null) {
+            List<String> updatedInterfaces = Arrays.stream(interfaces)
+                    .map(interfaceName -> interfaceName.replace('/', '.'))
+                    .collect(Collectors.toList());
+            classInfo.setImplementationList(updatedInterfaces);
+        }
 
         if ((access & Opcodes.ACC_INTERFACE) != 0) {
             classInfo.setClassType("interfaceClass");
@@ -77,6 +79,45 @@ public class AnnotationClassVisitor extends ClassVisitor {
             classInfo.setIsNested(true);
         }
     }
+
+    @Override
+    public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+
+        // Skip the 'init' method (constructor) by checking the method name
+        if ("<init>".equals(name) || name.startsWith("lambda$")) {
+            return null;  // Returning null means we ignore this method
+        }
+
+        MethodInfo currentMethod = new MethodInfo();
+        currentMethod.setMethodName(name);
+        currentMethod.setStatic((access & Opcodes.ACC_STATIC) != 0); // Check if the method is static
+
+        // Add method to methodList
+        methodInfoList.add(currentMethod);
+        return new MethodAnnotationVisitor(currentMethod);
+    }
+
+    @Override
+    public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+
+        // Create FieldInfo object for this field
+        FieldInfo fieldInfo = new FieldInfo();
+        fieldInfo.setIdentifier(name);  // Set the field name (identifier)
+
+        // Extract datatype from the descriptor (e.g., "Ljava/lang/String;" becomes "java.lang.String", "I" becomes "integer)
+        String fieldType = getFieldType(descriptor); // Get the last part
+
+        fieldInfo.setDatatype(fieldType); // Set the datatype
+
+        // Determine if the field is static
+        fieldInfo.setStatic((access & Opcodes.ACC_STATIC) != 0);
+
+        // Add the field info to the list
+        fieldInfoList.add(fieldInfo);
+
+        return new FieldAnnotationVisitor(fieldInfo);  // Return a visitor to collect annotations
+    }
+
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
