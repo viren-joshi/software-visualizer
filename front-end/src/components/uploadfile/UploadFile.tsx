@@ -53,7 +53,7 @@ const UploadFile = () => {
     const formData = new FormData();
     formData.append('file', selectedFile!);
     formData.append('classContainer', packageName!);
-    const response = await axios.post('http://localhost:8080/initialize/upload', formData, {
+    const response = await axios.post('http://csci5308-vm8.research.cs.dal.ca:8080/initialize/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
