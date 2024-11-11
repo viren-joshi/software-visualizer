@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Config ###
+src/main/java/com/g8/configuration/firebase-config.json
