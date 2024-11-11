@@ -11,7 +11,13 @@ export interface SidebarProps {
 
 const Sidebar:React.FC<SidebarProps> = ({ classNames, handleChange, alignment,extDependencies
 }) => {
-  
+  const [searchQuery, setSearchQuery] = useState(""); 
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(event.target.value); 
+  };
+  const filteredClassNames = classNames.filter(name => name.toLowerCase().includes(searchQuery.toLowerCase())); 
+  const filteredExtDependencies = extDependencies.filter(name => name.toLowerCase().includes(searchQuery.toLowerCase())
+);
   return (
 
     <div>
@@ -20,8 +26,8 @@ const Sidebar:React.FC<SidebarProps> = ({ classNames, handleChange, alignment,ex
       <TextField
       variant="outlined"
       placeholder="Search..."
-      // value={searchQuery}
-      // onChange={handleSearchChange}
+      value={searchQuery}
+      onChange={handleSearchChange}
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
@@ -45,7 +51,7 @@ const Sidebar:React.FC<SidebarProps> = ({ classNames, handleChange, alignment,ex
   {alignment === 'internal' ? <> <Typography variant="h4" gutterBottom>
             Classes List
           </Typography>
-          {classNames.map((name: any, index: any) => {
+          {filteredClassNames.map((name: any, index: any) => {
               return (
               <List key={index} >
                 <ListItemText>{name}</ListItemText>
@@ -54,7 +60,7 @@ const Sidebar:React.FC<SidebarProps> = ({ classNames, handleChange, alignment,ex
             })}
             </>:
             <><Typography variant="h4" gutterBottom>Dependency List</Typography>
-             {extDependencies.map((name: any, index: any) => {
+             {filteredExtDependencies.map((name: any, index: any) => {
               return (
               <List key={index} >
                 <ListItemText>{name}</ListItemText>
