@@ -6,6 +6,7 @@ import org.objectweb.asm.Opcodes;
 import java.util.ArrayList;
 import java.util.List;
 
+// Required to get values from annotations (e.g. @a(name = value) then name = value will be stored in the final result
 public class PrintAnnotationVisitor extends AnnotationVisitor {
 
     private final String annotationName;

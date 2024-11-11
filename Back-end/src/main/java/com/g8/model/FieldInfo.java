@@ -21,7 +21,6 @@ public class FieldInfo {
         this.isAnnotated = isAnnotated;
     }
 
-    // Getters and setters
     public String getIdentifier() {
         return identifier;
     }

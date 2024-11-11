@@ -19,6 +19,7 @@ public class MethodAnnotationVisitor extends MethodVisitor {
         this.currentMethod = currentMethod;
     }
 
+    // Formatting the annotation and setting the variables
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         String annotationName = descriptor.replace('/', '.').replace(";", "");
@@ -28,6 +29,7 @@ public class MethodAnnotationVisitor extends MethodVisitor {
         return annotationVisitor;
     }
 
+    // Required because if directly stored in the class list then the values of annotations won't be stored
     @Override
     public void visitEnd() {
         for (PrintAnnotationVisitor annotationVisitor : annotations) {

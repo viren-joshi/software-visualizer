@@ -15,7 +15,6 @@ public class ClassInfo {
     private List<String> annotations = new ArrayList<>();
     private List<String> implementationList = new ArrayList<>();
 
-    // Getters and setters
     public String getName() {
         return name;
     }

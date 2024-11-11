@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
@@ -30,7 +31,7 @@ public class DependencyHandlerTest {
 
     private DependencyHandler dependencyHandler;
     private static final String TEST_CLASS_CONTAINER = "com/blog";
-    private static final String TEST_JAR_FILE_NAME = "blog.jar";
+    private static final String TEST_JAR_FILE_NAME = "blog-0.0.1-SNAPSHOT.jar";
     private static String TEST_JAR_FILE_PATH = "src" + File.separator + "test" + File.separator + "resources" + File.separator + TEST_JAR_FILE_NAME;
 
     @Mock
@@ -82,7 +83,6 @@ public class DependencyHandlerTest {
         String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
 
         List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
-        System.out.println(result);
         assertTrue(resultList.isEmpty());
     }
 
@@ -139,6 +139,8 @@ public class DependencyHandlerTest {
 
         // Verify that saveFile and analyzeFile were called
         assertDoesNotThrow(() -> dependencyHandler.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
+
+        Files.delete(Paths.get(TEST_JAR_FILE_NAME));
     }
 
     @Test

@@ -10,11 +10,20 @@ import java.util.stream.Collectors;
 
 public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
 
+    // Stores class information
     private ClassInfo classInfo;
+
+    // Stores method information
     private List<MethodInfo> methodInfoList;
+
+    // Stores variable information
     private List<FieldInfo> fieldInfoList;
+
+    // Preserves nested class relationship
     Map<String, List<String>> parentClassToNestedClassesMap;
-    private final List<PrintAnnotationVisitor> annotations;  // Temporary list
+
+    // Stores the annotations information so that it can be added to the classInfo object once the class has been visited
+    private final List<PrintAnnotationVisitor> annotations;
 
 
     public ClassVisitor(Map<String, List<String>> map) {
@@ -33,10 +42,9 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
         name = name.replace("/", ".");
         String[] nameArr = name.split("\\.");
 
-        // get the final name that might be combined
+        // get the final classname that might contain nested class name too
         String combinedName = nameArr[nameArr.length - 1];
 
-        // parent name is null
         String parentName = null;
 
         // if the class is a nested class then it will contain $ between class names
@@ -51,7 +59,7 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
         // setting the name
         classInfo.setName(name);
 
-        // If the superName is not Object, set the inherits
+        // If the super class is not Object class, set the inheritance dependency
         classInfo.setInherits("java/lang/Object".equals(superName) ? "" : superName.replace('/', '.'));
         if(interfaces != null) {
             List<String> updatedInterfaces = Arrays.stream(interfaces)
@@ -60,6 +68,7 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
             classInfo.setImplementationList(updatedInterfaces);
         }
 
+        // Setting the class type
         if ((access & Opcodes.ACC_INTERFACE) != 0) {
             classInfo.setClassType("interfaceClass");
         } else if ((access & Opcodes.ACC_ABSTRACT) != 0) {
@@ -74,40 +83,42 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
             // Add this nested class to the parent's nested classes list
             parentClassToNestedClassesMap
                     .computeIfAbsent(parentName, k -> new ArrayList<>())
-                    .add(name);  // Add the nested class to its parent's list
+                    .add(name);
 
             classInfo.setIsNested(true);
         }
     }
 
+    // Visits methods in a class
     @Override
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 
         // Skip the 'init' method (constructor) by checking the method name
         if ("<init>".equals(name) || name.startsWith("lambda$")) {
-            return null;  // Returning null means we ignore this method
+            return null;
         }
 
         MethodInfo currentMethod = new MethodInfo();
         currentMethod.setMethodName(name);
         currentMethod.setStatic((access & Opcodes.ACC_STATIC) != 0); // Check if the method is static
 
-        // Add method to methodList
+        // Add method to the methodList
         methodInfoList.add(currentMethod);
         return new MethodAnnotationVisitor(currentMethod);
     }
 
+    // Visiting variables in a class
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
 
         // Create FieldInfo object for this field
         FieldInfo fieldInfo = new FieldInfo();
-        fieldInfo.setIdentifier(name);  // Set the field name (identifier)
+        fieldInfo.setIdentifier(name);
 
         // Extract datatype from the descriptor (e.g., "Ljava/lang/String;" becomes "java.lang.String", "I" becomes "integer)
-        String fieldType = getFieldType(descriptor); // Get the last part
+        String fieldType = getFieldType(descriptor);
 
-        fieldInfo.setDatatype(fieldType); // Set the datatype
+        fieldInfo.setDatatype(fieldType);
 
         // Determine if the field is static
         fieldInfo.setStatic((access & Opcodes.ACC_STATIC) != 0);
@@ -121,10 +132,16 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
 
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+
+        // making the format as closely equivalent to the real life format that a user sees
         String annotationName = descriptor.replace('/', '.').replace(";", "");
+
+        // removing the L from the beginning and adding @
         annotationName = "@" + annotationName.substring(1);
 
         String[] ann = annotationName.split("\\.");
+
+        // Checking if the class is a controller class
         if(ann[ann.length - 1].toLowerCase().contains("controller"))
             classInfo.setIsControllerClass(true);
 
@@ -139,6 +156,8 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
         return classInfo;
     }
 
+    // Adds all the annotations from the list to the classInfo object at the end of the visit
+    // Required to do that because the test was failing otherwise
     @Override
     public void visitEnd() {
 
@@ -149,6 +168,7 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
         annotations.clear();  // Reset list for the next visit
     }
 
+    // Getting the field type in a proper format as the raw output is not understandable
     public String getFieldType(String descriptor) {
 
         // Handle primitive types directly

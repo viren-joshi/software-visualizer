@@ -25,15 +25,25 @@ import java.util.jar.JarFile;
 @Service
 public class DependencyHandler {
 
-    // stores the package name that has all the user classes
+    // Stores the package name that has all the user classes
     private String USER_PACKAGE_PREFIX;
-    private List<ClassInfo> allClassInfoList;
-    private Map<String, ClassInfo> classInfoMap;
-    private Map<String, List<String>> parentClassToNestedClassesMap;
-    private String internalDep;
-    private String externalDep;
-    private Gson gson;
 
+    // Collection of information of all the classes
+    private List<ClassInfo> allClassInfoList;
+
+    // To retrieve classInfo object by searching for its name
+    private Map<String, ClassInfo> classInfoMap;
+
+    // Stores nested class relationship
+    private Map<String, List<String>> parentClassToNestedClassesMap;
+
+    // JSON string containing internal dependencies. Used as a response to a user's request
+    private String internalDep;
+
+    // JSON string containing external dependencies. Used as a response to a user's request
+    private String externalDep;
+
+    private Gson gson;
 
     public DependencyHandler() {
         this.allClassInfoList = new ArrayList<>();
@@ -43,6 +53,7 @@ public class DependencyHandler {
         gson = new Gson();
     }
 
+    // Saves user uploaded JAR file in the system
     protected void saveFile(MultipartFile file, String jarFilePath) throws Exception {
 
         // Save the uploaded JAR file to this project's folder
@@ -59,11 +70,14 @@ public class DependencyHandler {
         }
     }
 
+    // Extracts internal and external dependencies
     protected void analyzeFile(String jarFilePath) throws Exception {
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
             jarFile.stream()
                 .forEach(entry -> {
+
+                    // Filtering valid user defined classes to extract their dependencies
                     if (entry.getName().endsWith(".class") && entry.getName().contains(USER_PACKAGE_PREFIX)) {
                         try {
                             processClassEntry(jarFile, entry);
@@ -72,6 +86,7 @@ public class DependencyHandler {
                         }
                     }
 
+                    // POM file has external dependencies
                     if (entry.getName().endsWith("pom.xml")) {
                         try {
                             externalDep = analyzePomDependencies(entry, jarFile);
@@ -82,6 +97,7 @@ public class DependencyHandler {
                 });
         }
 
+        // Filling nested class information
         for(Map.Entry<String, List<String>> entry : parentClassToNestedClassesMap.entrySet()) {
             classInfoMap.get(entry.getKey()).setNestedClassesList(entry.getValue());
         }
@@ -90,6 +106,7 @@ public class DependencyHandler {
         internalDep = gson.toJson(allClassInfoList);
     }
 
+    // Visiting a class and storing the retrieved information in the list
     void processClassEntry(JarFile jarFile, JarEntry entry) throws Exception {
 
         try (InputStream inputStream = jarFile.getInputStream(entry)) {
@@ -103,6 +120,7 @@ public class DependencyHandler {
         }
     }
 
+    // Gives response to a user's request
     public ResponseEntity<String> analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
 
         USER_PACKAGE_PREFIX = classContainer.replace(".", "/");
@@ -119,13 +137,16 @@ public class DependencyHandler {
 
         FileProps.setFilePath(jarFilePath);
 
+        // Saving the file
         saveFile(file, jarFilePath);
 
+        // Analyzing the file
         analyzeFile(jarFilePath);
 
         return new ResponseEntity<>("Success", HttpStatus.OK);
     }
 
+    // Analyzes in external dependencies
     public String analyzePomDependencies(JarEntry entry, JarFile jar) throws Exception {
 
         List<Map<String, String>> dependenciesList = new ArrayList<>();
