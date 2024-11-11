@@ -1,5 +1,8 @@
 package com.g8.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -13,19 +16,29 @@ import com.g8.service.AuthService;
 @RequestMapping("/auth")
 public class AuthController {
 
-    public AuthController(AuthService authService) {
-        // Constructor
-    }
+    
+    private final AuthService authService;
 
+    @Autowired
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+    
+    Logger logger = LoggerFactory.getLogger(AuthController.class);
+    
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@RequestParam String email, @RequestParam String password, @RequestParam String name) {
-        // Skeleton for signUp endpoint
-        return null;
+        return authService.signUp(email, password, name);   
     }
 
     @PostMapping("/verfyToken")
     public ResponseEntity<String> verifyToken(@RequestHeader("Authorization") String idToken) {
-        // Skeleton for verifyToken endpoint
-        return null;
+        if(authService.verifyToken(idToken)) {
+            return ResponseEntity.ok("{isVerified: true}");
+        } else {
+            return ResponseEntity.status(401).body("{isVerified: false}");
+        }
     }
+
+
 }
