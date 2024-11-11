@@ -17,29 +17,33 @@ public class UploadController {
         this.dependencyHandler = dependencyHandler;
     }
 
+    // Saves the uploaded file and analyzes it
     @PostMapping("/upload")
     public ResponseEntity<String> uploadProject(@RequestParam("file") MultipartFile file, @RequestParam("classContainer") String classContainer) {
         
         try {
-            String result = dependencyHandler.analyzeUploadedProject(file, classContainer);
-            return ResponseEntity.ok(result);
+            return dependencyHandler.analyzeUploadedProject(file, classContainer);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to analyze project: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Failed to analyze project");
         }
     }
 
+    // Retrieves internal dependencies
     @GetMapping("/intDep")
     public ResponseEntity<String> getInternalDependencies() {
         String response = dependencyHandler.getInternalDependencies();
         return ResponseEntity.ok(response);
     }
 
+    // Retrieves external dependencies
     @GetMapping("/extDep")
     public ResponseEntity<String> getExternalDependencies() {
         String response = dependencyHandler.getExternalDependencies();
         return ResponseEntity.ok(response);
     }
 
+    // Retrieves all the class names
     @GetMapping("/classList")
     public ResponseEntity<String> getClasses() {
         String response = dependencyHandler.getClassList();
