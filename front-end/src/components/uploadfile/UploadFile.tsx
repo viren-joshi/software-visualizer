@@ -1,4 +1,4 @@
-import { Box, Button, Grid2, TextField, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Grid2, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import PlusSignIcon from "../../assets/PlusSignIcon";
@@ -6,9 +6,10 @@ import axios from "axios";
 
 const UploadFile = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [fileName,setFileName]= useState<String>();
-  const [packageName,setPackageName]= useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
+  const [packageName, setPackageName] = useState<string>("");
   const [error, setError] = useState<string | null>(null); 
+  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const handleFileChange = (event: any) => {
@@ -17,39 +18,39 @@ const UploadFile = () => {
       const fileExtension = file.name.split('.').pop().toLowerCase();
       if (fileExtension !== 'jar') {
         setError("Invalid file type. Please upload a JAR file.");
-        setSelectedFile(null); // Clear the selected file
+        setSelectedFile(null);
        
       } else {
-        setError(null); // Clear error
-        setSelectedFile(file); // Set the valid JAR file
+        setError(null);
+        setSelectedFile(file);
         setFileName(file.name);
       }
     }
   };
   const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault(); // Prevent default behavior (file open)
+    event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file && file.name) {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       if (fileExtension !== 'jar') {
         setError("Invalid file type. Please upload a JAR file.");
-        setSelectedFile(null); // Clear the selected file
+        setSelectedFile(null);
         
       } else {
-        setError(null); // Clear error
-        setSelectedFile(file); // Set the valid JAR file
+        setError(null);
+        setSelectedFile(file);
         setFileName(file.name);
       }
     }
   };
 
   const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault(); // Prevent default behavior (file open)
+    event.preventDefault();
   };
 
   const navigateToNextPage =async () =>{
-    // code for integration of API will be done later 
-
+    setLoading(true); // Start loading
+    try {
     const formData = new FormData();
     formData.append('file', selectedFile!);
     formData.append('classContainer', packageName!);
@@ -59,9 +60,31 @@ const UploadFile = () => {
       },
     });
     navigate('/mainpage',  { state: { response: response.data } });
-  };
+  } catch (error) {
+    console.error("Error uploading file:", error);
+  } finally {
+    setLoading(false); // Stop loading
+  }};
   return (
     <>
+    {loading && ( 
+      <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+    >
+          <CircularProgress size={60} />
+    </Box>
+  )}
     <Grid2 container spacing={2}>
       <Grid2 size={8}>
         <Typography variant="h4" gutterBottom>
@@ -126,7 +149,7 @@ const UploadFile = () => {
             </Typography>
             <TextField fullWidth onChange={(event)=> setPackageName(event.target.value)}  value={packageName}/>
             <Box mt={4} >
-            <Button variant="contained" color="primary"  disabled={packageName.trim() === "" || !selectedFile }
+            <Button variant="contained" color="primary" disabled={packageName.trim() === "" || !selectedFile || loading}
           onClick={navigateToNextPage} fullWidth style={{textTransform:'none'}}>visualize</Button>
             </Box>
             </Box>
@@ -136,7 +159,7 @@ const UploadFile = () => {
     </Grid2>
       
       <Box mt={2}>
-        <Button variant="outlined" onClick={() => setSelectedFile(null)}>
+        <Button variant="outlined" onClick={() => setSelectedFile(null)} disabled={loading}>
           Cancel
         </Button>
       </Box>
