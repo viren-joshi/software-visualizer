@@ -124,7 +124,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
         <Card elevation={3}>
           <CardHeader
             title="Software Visualizer"
-            titleTypographyProps={{ variant: 'h4', align: 'center', gutterBottom: true }}
+            titleTypographyProps={{ variant: 'h4', align: 'left', gutterBottom: true }}
             action={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Avatar src={user.photoURL || undefined}>{user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}</Avatar>

@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  CardHeader,
   Container,
   Tab,
   Tabs,
@@ -163,121 +164,138 @@ const SignInSignUp = (): React.ReactElement => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <StyledCard>
-        <CardContent>
-          <Tabs value={tabValue} onChange={handleTabChange} centered>
-            <Tab label="Sign In" />
-            <Tab label="Sign Up" />
-          </Tabs>
-          <form onSubmit={handleSubmit}>
-            <TabPanel value={tabValue} index={0}>
-              <TextField
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <TextField
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                sx={{ mt: 3, mb: 2 }}
-              >
-                Sign In
-              </Button>
-            </TabPanel>
-            <TabPanel value={tabValue} index={1}>
-              <TextField
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                id="name"
-                label="Name"
-                name="name"
-                autoComplete="given-name"
-                autoFocus
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)} />
-              <TextField
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <TextField
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <TextField
-                variant="outlined"
-                margin="normal"
-                required
-                fullWidth
-                name="confirmPassword"
-                label="Confirm Password"
-                type="password"
-                id="confirmPassword"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                color="primary"
-                sx={{ mt: 3, mb: 2 }}
-              >
-                Sign Up
-              </Button>
-            </TabPanel>
-          </form>
-        </CardContent>
-      </StyledCard>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(to right, #e0f2f1, #e8eaf6)',
+      }}
+    >
+      <Container maxWidth="sm">
+        <Card elevation={3}>
+          <CardContent>
+            <Typography variant="h4" align="center" gutterBottom>
+             Software Visualizer
+            </Typography>
+            <Typography variant="body2" align="center" gutterBottom color="text.secondary">
+              Please sign in to continue. If you're new here, sign up for a new account!
+            </Typography>
+            <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ mb: 2 }}>
+              <Tab label="Sign In" />
+              <Tab label="Sign Up" />
+            </Tabs>
+            <form onSubmit={handleSubmit}>
+              <TabPanel value={tabValue} index={0}>
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  autoFocus
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  sx={{ mt: 3, mb: 2 }}
+                >
+                  Sign In
+                </Button>
+              </TabPanel>
+              <TabPanel value={tabValue} index={1}>
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Name"
+                  name="name"
+                  autoComplete="given-name"
+                  autoFocus
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                />
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <TextField
+                  variant="outlined"
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  type="password"
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  sx={{ mt: 3, mb: 2 }}
+                >
+                  Sign Up
+                </Button>
+              </TabPanel>
+            </form>
+          </CardContent>
+        </Card>
+      </Container>
       <Snackbar open={!!error || !!success} autoHideDuration={6000} onClose={() => { setError(null); setSuccess(null); }}>
-        <Alert onClose={() => { setError(null); setSuccess(null); }} severity={error ? "error" : "success"} sx={{ width: '100%' }}>
+        <Alert onClose={() => { setError(null); setSuccess(null); }} severity={error ? "error" : "success" } sx={{ width: '100%' }}>
           {error || success}
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 };
 
