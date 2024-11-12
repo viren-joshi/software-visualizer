@@ -1,25 +1,18 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { initializeApp } from "firebase/app";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import Main from "./components/mainpage/Main";
 import NotFound from "./components/NotFound";
 import UploadFile from './components/uploadfile/UploadFile';
 import SignInSignUp from './components/signIn/SignInSignUp';
 import { Box, CircularProgress } from '@mui/material';
-
-const firebaseConfig = {
-  // Your Firebase configuration object goes here
-  // You can find this in your Firebase project settings
-};
+import { auth } from './firebase-setup';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    initializeApp(firebaseConfig);
-    const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);

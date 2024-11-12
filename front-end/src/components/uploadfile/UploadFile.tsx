@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
-import axios from "axios";
 import styled from "@emotion/styled";
 import { User } from "firebase/auth";
 import { getAuth, signOut } from "firebase/auth";
@@ -104,6 +103,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      localStorage.removeItem('soft-viz-tokenID');
       navigate('/signin');
     } catch (error) {
       setError('Failed to sign out. Please try again.');

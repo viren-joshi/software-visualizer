@@ -14,8 +14,9 @@ import {
   Snackbar,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import axios from 'axios';
+const FormData = require('form-data');
 interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
@@ -48,10 +49,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
   marginTop: theme.spacing(8),
 }));
 
-const SignInSignUp: React.FC = () => {
+const SignInSignUp = (): React.ReactElement => {
   const [tabValue, setTabValue] = useState(0);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -62,8 +62,7 @@ const SignInSignUp: React.FC = () => {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    setFirstName('');
-    setLastName('');
+    setUserName('');
     setEmail('');
     setPassword('');
     setConfirmPassword('');
@@ -77,9 +76,42 @@ const SignInSignUp: React.FC = () => {
       // Sign In logic
       if (email && password) {
         try {
-          await signInWithEmailAndPassword(auth, email, password);
-          setSuccess('Successfully signed in!');
-          navigate('/');
+          await signInWithEmailAndPassword(auth, email, password).then((userCredential) => {
+            auth.currentUser?.getIdToken().then(async (token) => {
+              console.log(token);
+              document.cookie = `tokenID=${token}`;
+              // Send token to back-end. TODO.
+              let data = new FormData();
+
+              let config = {
+                method: 'post',
+                maxBodyLength: Infinity,
+                url: 'http://localhost:8080/auth/verifyToken',
+                headers: { 
+                  'Authorization': token, 
+                  'Content-Type': 'application/json', 
+                },
+                data : data
+              };
+
+              await axios.request(config)
+              .then((response) => {
+                if (response.status !== 200) {
+                  console.log('Failed to sign in');
+                } else {
+                  localStorage.setItem('soft-viz-tokenID', token);
+                  console.log('Successfully signed in');
+                  console.log(response.data); 
+                  navigate('/');
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+            });
+          });
+          
+          
         } catch (error) {
           setError('Failed to sign in. Please check your credentials.');
         }
@@ -88,23 +120,44 @@ const SignInSignUp: React.FC = () => {
       }
     } else {
       // Sign Up logic
-      if (firstName && lastName && email && password && confirmPassword) {
-        if (password !== confirmPassword) {
-          setError('Passwords do not match');
-        } else {
+      if(!userName || !email || !password || !confirmPassword) {}
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+      } else {
           try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCredential.user, {
-              displayName: `${firstName} ${lastName}`
+            console.log(userName + ' ' + email + ' ' + password);
+            
+            let userSignUpData = new FormData();
+            userSignUpData.append('name', userName);
+            userSignUpData.append('email', email);
+            userSignUpData.append('password', password);
+            let config = {
+              method: 'post',
+              maxBodyLength: Infinity,
+              url: 'http://localhost:8080/auth/signup',
+              data : userSignUpData
+            };
+            console.log(config);
+            await axios.request(config).then(async (response) => {
+              if (response.status !== 200) {
+                throw new Error('Failed to sign up');
+              } 
+              let responseData = JSON.stringify(response.data);
+              await signInWithEmailAndPassword(auth, email, password).then(async (userCredential) => {
+                await auth.currentUser?.getIdToken().then((token) => {
+                  localStorage.setItem('soft-viz-tokenID', token);
+                  console.log('Successfully signed in & up');
+                  console.log(responseData); 
+                  setSuccess('Successfully signed up!');
+                  navigate('/');
+                });
+              })
             });
-            setSuccess('Successfully signed up!');
-            navigate('/');
-          } catch (error) {
+          }
+          catch (error) {
+            console.log(error);
             setError('Failed to sign up. Please try again.');
           }
-        }
-      } else {
-        setError('Please fill in all fields');
       }
     }
   };
@@ -161,11 +214,22 @@ const SignInSignUp: React.FC = () => {
                 margin="normal"
                 required
                 fullWidth
+                id="name"
+                label="Name"
+                name="name"
+                autoComplete="given-name"
+                autoFocus
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)} />
+              <TextField
+                variant="outlined"
+                margin="normal"
+                required
+                fullWidth
                 id="email"
                 label="Email Address"
                 name="email"
                 autoComplete="email"
-                autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
