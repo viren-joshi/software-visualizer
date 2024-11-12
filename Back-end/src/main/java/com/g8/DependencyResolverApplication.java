@@ -1,6 +1,6 @@
 package com.g8;
 
-import com.g8.properties.FileProps;
+import com.g8.utils.FileProps;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -25,8 +25,11 @@ public class DependencyResolverApplication implements CommandLineRunner {
 				try {
 					File file = new File(FileProps.getFilePath());
 					if (file.exists()) {
-						file.delete();
-						System.out.println("File deleted!");
+						boolean result = file.delete();
+						if(result)
+							System.out.println("File deleted!");
+						else
+							System.out.println("Couldn't delete the file!");
 					}
 				} catch (Exception e) {
 					System.err.println("Failed to delete file on shutdown: " + e.getMessage());

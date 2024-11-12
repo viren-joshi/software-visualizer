@@ -52,6 +52,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
+    event.preventDefault();
     const file = event.dataTransfer.files[0];
     validateAndSetFile(file);
   };
@@ -70,7 +71,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
   };
 
   const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault(); // Prevent default behavior (file open)
+    event.preventDefault();
   };
 
   const handleUpload = async () => {
