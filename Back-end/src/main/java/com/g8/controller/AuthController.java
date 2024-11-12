@@ -1,9 +1,11 @@
 package com.g8.controller;
 
+import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +33,7 @@ public class AuthController {
         return authService.signUp(email, password, name);   
     }
 
-    @PostMapping("/verfyToken")
+    @PostMapping("/verifyToken")
     public ResponseEntity<String> verifyToken(@RequestHeader("Authorization") String idToken) {
         if(authService.verifyToken(idToken)) {
             return ResponseEntity.ok("{isVerified: true}");
