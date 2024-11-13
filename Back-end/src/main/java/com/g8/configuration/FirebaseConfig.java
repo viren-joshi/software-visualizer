@@ -1,16 +1,19 @@
 package com.g8.configuration;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import io.github.cdimascio.dotenv.Dotenv;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 @Configuration
 public class FirebaseConfig {
@@ -18,9 +21,13 @@ public class FirebaseConfig {
 
     @Bean
     public FirebaseAuth firebaseAuth() {
+
         try {
-            
-            FirebaseOptions options = FirebaseOptions.builder().setCredentials(GoogleCredentials.getApplicationDefault()).build();
+            Dotenv dotenv = Dotenv.load();
+            String credentialsPath = dotenv.get("GOOGLE_APPLICATION_CREDENTIALS");
+            FileInputStream serviceAccount = new FileInputStream(System.getProperty("user.dir") + File.separator + credentialsPath);
+
+            FirebaseOptions options = FirebaseOptions.builder().setCredentials(GoogleCredentials.fromStream(serviceAccount)).build();
             FirebaseApp.initializeApp(options);
             return FirebaseAuth.getInstance();
 
