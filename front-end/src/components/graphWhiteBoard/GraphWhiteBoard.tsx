@@ -93,7 +93,7 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
     const edgesList: Edge[] = [];
 
     // creating nodes and edges from the jsonData
-    jsonData.userClassList.forEach((classItem) => {
+    jsonData.internalDependencyList.forEach((classItem) => {
       nodesList.push({
         id: classItem.name.split('.').pop()!,
         type: 'default',
