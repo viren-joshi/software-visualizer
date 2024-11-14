@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/initialize")
+@CrossOrigin(origins = "*")
 public class UploadController {
 
     private final DependencyHandler dependencyHandler;

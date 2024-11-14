@@ -1,6 +1,8 @@
 package com.g8.controller;
 
+import com.g8.service.AuthService;
 import com.g8.service.DependencyHandler;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +29,16 @@ public class UploadControllerTest {
     @MockBean
     private DependencyHandler dependencyHandler;
 
+    @MockBean
+    private AuthService authService;
+
     private String baseURL = "http://localhost:8080/initialize";
+    private final String authorizationToken = "mock-token";
+
+    @BeforeEach
+    public void setup() {
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+    }
 
     @Test
     public void testUploadProjectWithValidJar() throws Exception {
@@ -39,6 +50,7 @@ public class UploadControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
                         .file(validFile)
                         .param("classContainer", "com.example")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Success"));
@@ -54,6 +66,7 @@ public class UploadControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
                         .file(invalidFile)
                         .param("classContainer", "com.example")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Unsupported file"));
@@ -69,6 +82,7 @@ public class UploadControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
                         .file(validFile)
                         .param("classContainer", "com.example")
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().is5xxServerError())
                 .andExpect(content().string("Failed to analyze project"));
@@ -87,6 +101,7 @@ public class UploadControllerTest {
 
     private void testAssertNonEmptyJson(String endpoint) throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get(baseURL + endpoint)
+                        .header("Authorization", authorizationToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }

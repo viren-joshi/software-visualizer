@@ -15,10 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -179,7 +176,8 @@ public class DependencyHandler {
     }
 
     public String getClassList() {
-        return this.classInfoMap.keySet().toString();
+        String data = this.classInfoMap.keySet().toString();
+        return data.substring(1, data.length() - 1);
     }
 
     protected void setUSER_PACKAGE_PREFIX(String val) {
