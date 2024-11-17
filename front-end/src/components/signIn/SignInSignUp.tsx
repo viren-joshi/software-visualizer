@@ -17,7 +17,10 @@ import {
 import { styled } from '@mui/material/styles';
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import axios from 'axios';
+
 const FormData = require('form-data');
+const server_url = process.env.REACT_APP_SERVER_URL;
+
 interface TabPanelProps {
     children?: React.ReactNode;
     index: number;
@@ -26,7 +29,7 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
     const { children, value, index, ...other } = props;
-
+    
     return (
       <div
         role="tabpanel"
@@ -79,15 +82,15 @@ const SignInSignUp = (): React.ReactElement => {
         try {
           await signInWithEmailAndPassword(auth, email, password).then((userCredential) => {
             auth.currentUser?.getIdToken().then(async (token) => {
-              console.log(token);
+
               document.cookie = `tokenID=${token}`;
-              // Send token to back-end. TODO.
+
               let data = new FormData();
 
               let config = {
                 method: 'post',
                 maxBodyLength: Infinity,
-                url: 'http://localhost:8080/auth/verifyToken',
+                url: `${server_url}/auth/verifyToken`,
                 headers: { 
                   'Authorization': token, 
                   'Content-Type': 'application/json', 
@@ -135,7 +138,7 @@ const SignInSignUp = (): React.ReactElement => {
             let config = {
               method: 'post',
               maxBodyLength: Infinity,
-              url: 'http://localhost:8080/auth/signup',
+              url: `${server_url}/auth/signup`,
               data : userSignUpData
             };
             console.log(config);

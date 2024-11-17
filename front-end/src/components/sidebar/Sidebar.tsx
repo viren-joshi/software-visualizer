@@ -49,7 +49,7 @@ const Sidebar:React.FC<SidebarProps> = ({ classNames, handleChange, alignment,ex
   </ToggleButtonGroup>
   </Box>
   {alignment === 'internal' ? <> <Typography variant="h4" gutterBottom>
-            Classes List
+            Class List
           </Typography>
           {filteredClassNames.map((name: any, index: any) => {
               return (

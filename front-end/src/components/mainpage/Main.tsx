@@ -5,12 +5,11 @@ import { useLocation } from 'react-router-dom';
 import { useState } from 'react';
 
 export interface ClassContainer {
-  classContainer: string;
-  userClassList: UserClass[];
+  internalDependencyList: InternalDependency[];
   externalDependencyList: MavenDependency[];
 };
 
-export interface UserClass {
+export interface InternalDependency {
   name: string;
   inherits: string;
   classType: string;
@@ -18,7 +17,7 @@ export interface UserClass {
   methodList: Method[];
   isNested: boolean;
   isControllerClass: boolean;
-  nestedClassesList: UserClass[];
+  nestedClassesList: InternalDependency[];
   annotations: string[];
   implementationList: string[];
 }
@@ -39,16 +38,16 @@ export interface Method {
 
 export interface MavenDependency {
   groupId: string;  // Group identifier for the dependency
+  scope: string;  // Scope of the dependency (e.g., compile, test, etc.), can be empty
   artifactId: string;  // Artifact identifier for the dependency
   version: string;  // Version of the artifact (can be empty)
-  scope: string;  // Scope of the dependency (e.g., compile, test, etc.), can be empty
 }
 
 function Main() {
-  const location = useLocation();
+  const location = useLocation(); 
   const { response } = location.state || {};
-  const classNames = response.userClassList.map((userClass:UserClass) => userClass.name.split('.').pop());
-  const  extDependencies= response.externalDependencyList.map((externalDependency: MavenDependency) => externalDependency.artifactId);
+  const classNames = response.classNames.split(',').map((className: string) => className.trim().split('.').pop());
+  const extDependencies= response.externalDependencyList.map((externalDependency: MavenDependency) => externalDependency.artifactId);
   const [alignment, setAlignment] = useState<String>('internal');
   const handleChange = (
     event: React.MouseEvent<HTMLElement>,

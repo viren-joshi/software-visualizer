@@ -20,6 +20,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import styled from "@emotion/styled";
 import { User } from "firebase/auth";
 import { getAuth, signOut } from "firebase/auth";
+import axios from "axios";
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -32,6 +33,8 @@ const VisuallyHiddenInput = styled('input')({
   whiteSpace: 'nowrap',
   width: 1,
 });
+
+const server_url = process.env.REACT_APP_SERVER_URL;
 
 interface UploadFileProps {
   user: User;
@@ -81,21 +84,53 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('classContainer', packageName);
+
+      const token = localStorage.getItem('soft-viz-tokenID');
       
-      const response = await axios.post('http://localhost:8080/initialize/upload', formData, {
+      const uploadResponse = await axios.post(`${server_url}/initialize/upload`, formData, {
         headers: {
+          'Authorization': token,
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      if (response.status !== 200) {
+      if (uploadResponse.status !== 200) {
+        console.log("Failed!!");
         throw new Error('Upload failed');
       }
-      
-      console.log('Upload successful:', response.data);
-      navigate('/mainpage',  { state: { response: response.data } });
+
+      const internapDependencies = await axios.get(`${server_url}/initialize/intDep`, {
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const externalDependencies = await axios.get(`${server_url}/initialize/extDep`, {
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const classList = await axios.get(`${server_url}/initialize/classList`, {
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Upload successful:', uploadResponse.data);
+
+      const response = {
+        internalDependencyList: internapDependencies.data || [],
+        externalDependencyList: externalDependencies.data || [],
+        classNames: classList.data || [],
+      };
+
+      navigate('/mainpage',  { state: { response: response} });
     } catch (error) {
-      setError('Failed to upload file. Please try again.');
+      setError(`Failed to upload file. Please try again: ${error}`);
     } finally {
       setIsUploading(false);
     }
@@ -152,11 +187,6 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
                     p: 3,
                     textAlign: 'center',
                     transition: 'all 0.3s',
-                    backgroundColor: selectedFile ? 'success.light' : 'background.paper',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      backgroundColor: 'primary.light',
-                    },
                   }}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
