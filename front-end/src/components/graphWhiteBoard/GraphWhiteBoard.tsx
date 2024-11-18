@@ -1,21 +1,23 @@
-import { Typography } from '@mui/material'
-import React from 'react'
-import dagre from 'dagre';
-import { useCallback, useEffect } from 'react';
-import { ReactFlow, 
-    useNodesState,
-    useEdgesState,
-    addEdge, 
-    Connection
-  } from "@xyflow/react";
+import { List, ListItem, ListItemText, Typography } from "@mui/material";
+import React from "react";
+import dagre from "dagre";
+import { useCallback, useEffect } from "react";
+import {
+  ReactFlow,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Connection,
+} from "@xyflow/react";
 
-import '@xyflow/react/dist/style.css';
-import { Container, Box } from '@mui/material';
-import { ClassContainer } from '../mainpage/Main';
+import "@xyflow/react/dist/style.css";
+import { Container, Box } from "@mui/material";
+import { ClassContainer , InternalDependency} from "../mainpage/Main";
 
 export interface GraphWhiteBoardProps {
-  jsonData: ClassContainer,
-  alignment :String;
+  jsonData: ClassContainer;
+  alignment: String;
+  selectedClass: InternalDependency | null; // New prop for selected class
 }
 export interface NodeData extends Record<string, unknown> {
   label: string;
@@ -31,14 +33,15 @@ export interface Node {
   type: string; // Type of the node (e.g., 'input', 'output')
   position: Position; // Position of the node on the canvas
   data: NodeData; // Custom data associated with the node (e.g., the label)
-}export interface Edge {
+}
+export interface Edge {
   id: string; // Unique identifier for the edge
   source: string; // ID of the source node
   target: string; // ID of the target node
   label?: string; // Optional label describing the relationship (e.g., 'inheritance', 'composition')
 }
 
-// implementaiton of dagre in the graph 
+// implementaiton of dagre in the graph
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -48,7 +51,7 @@ const nodeHeight = 36;
 // layouting nodes and edges as per ranking
 const getLayoutedElements = (nodes: any, edges: any) => {
   const isHorizontal = false;
-  dagreGraph.setGraph({ rankdir: isHorizontal ? 'LR' : 'TB' });
+  dagreGraph.setGraph({ rankdir: isHorizontal ? "LR" : "TB" });
 
   // setNodes parsing in dagre
   nodes.forEach((node: any) => {
@@ -74,9 +77,11 @@ const getLayoutedElements = (nodes: any, edges: any) => {
   return { nodes, edges };
 };
 
-const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
-}) =>  {
-
+const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
+  jsonData,
+  alignment,
+  selectedClass
+}) => {
   const initialNodes: Node[] = [];
   const initialEdges: Edge[] = [];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -84,7 +89,7 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
+    [setEdges]
   );
 
   // setting up nodes list
@@ -95,9 +100,9 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
     // creating nodes and edges from the jsonData
     jsonData.internalDependencyList.forEach((classItem) => {
       nodesList.push({
-        id: classItem.name.split('.').pop()!,
-        type: 'default',
-        data: { label: classItem.name.split('.').pop()! },
+        id: classItem.name.split(".").pop()!,
+        type: "default",
+        data: { label: classItem.name.split(".").pop()! },
         position: { x: 0, y: 0 }, // temporary position, will be set by dagre layout
       });
 
@@ -105,9 +110,9 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
       if (classItem.inherits) {
         edgesList.push({
           id: `e-${classItem.name}-${classItem.inherits}`,
-          source: classItem.name.split('.').pop()!,
-          target: classItem.inherits.split('.').pop()!,
-          label: 'inheritance',
+          source: classItem.name.split(".").pop()!,
+          target: classItem.inherits.split(".").pop()!,
+          label: "inheritance",
         });
       }
 
@@ -116,9 +121,9 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
         classItem.implementationList.forEach((implClass) => {
           edgesList.push({
             id: `e-${classItem.name}-${implClass}`,
-            source: classItem.name.split('.').pop()!,
-            target: implClass.split('.').pop()!,
-            label: 'implementation',
+            source: classItem.name.split(".").pop()!,
+            target: implClass.split(".").pop()!,
+            label: "implementation",
           });
         });
       }
@@ -131,32 +136,102 @@ const GraphWhiteBoard:React.FC<GraphWhiteBoardProps> = ({ jsonData, alignment
   return (
     <div>
       {/* graph goes here */}
-      {alignment === 'internal' ? <> <Typography variant="h4" gutterBottom>
-            Internal Dependency Graph 
-          </Typography>
-          <Typography variant="body1" paragraph>
-            <Container fixed>
-            <Box sx={{ 
-                    bgcolor: '#ebedef', 
-                    height: '70vh',
-                    padding: '10px', 
-                    marginTop: '50px'
-                }}>
-                <ReactFlow 
-                    nodes={nodes} 
-                    edges={edges} 
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    fitView
-                >
-                </ReactFlow>
-            </Box>
-            
-        </Container>
-          </Typography> </> : <><Typography variant="h4" gutterBottom>External Dependency Graph</Typography></> }
-    </div>
-  )
-}
+      {alignment === "internal" ? (
+        selectedClass ? (
+          <Container fixed>
+            <Typography variant="h5" gutterBottom>
+              Class: {selectedClass.name}
+            </Typography>
+            {selectedClass.variableList?.length > 0 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Variables
+                </Typography>
+                <List>
+                  {(selectedClass.variableList ?? []).map((variable, index) => (
+                    <ListItem key={index}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "row-reverse",
+                          alignItems: "center",
+                        }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                marginRight: "8px",
+                                display: "inline",
+                              }}
+                            >
+                              {variable.datatype ?? "Unknown Type"}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography variant="body1" component="span">
+                              {variable.identifier ?? "Unnamed Variable"}
+                            </Typography>
+                          }
+                        />
+                      </Box>
+                    </ListItem>
+                  ))}
+                </List>
+              </>
+            )}
 
-export default GraphWhiteBoard
+            {selectedClass.methodList?.length > 0 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Methods
+                </Typography>
+                <List>
+                  {(selectedClass.methodList ?? []).map((method, index) => (
+                    <ListItem key={index}>
+                      <ListItemText
+                        primary={`${method.methodName ?? "Unnamed Method"}()`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </>
+            )}
+          </Container>
+        ) : (
+          <>
+            <Typography variant="h4" gutterBottom>
+              Internal Dependency Graph
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "#ebedef",
+                height: "70vh",
+                padding: "10px",
+                marginTop: "50px",
+              }}
+            >
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                fitView
+              />
+            </Box>
+          </>
+        )
+      ) : (
+        <>
+          <Typography variant="h4" gutterBottom>
+            External Dependency Graph
+          </Typography>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default GraphWhiteBoard;
