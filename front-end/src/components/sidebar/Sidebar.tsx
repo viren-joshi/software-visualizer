@@ -68,13 +68,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           <ToggleButton
             value="internal"
-            sx={{ textTransform: "none", width: "150px" }}
+            sx={{ textTransform: "none", width: "115px" }}
           >
             Internal
           </ToggleButton>
           <ToggleButton
             value="external"
-            sx={{ textTransform: "none", width: "150px" }}
+            sx={{ textTransform: "none", width: "112px" }}
           >
             External
           </ToggleButton>
@@ -83,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {alignment === "internal" ? (
         <>
           {" "}
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             Class List
           </Typography>
           {filteredClassNames.map((name: any, index: any) => {
@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </>
       ) : (
         <>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             Dependency List
           </Typography>
           {filteredExtDependencies.map((name: any, index: any) => {
