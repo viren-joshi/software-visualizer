@@ -35,3 +35,12 @@ jobs:
 
     - name: Run Unit Tests
       run: mvn test --file Back-end/pom.xml
+    
+    - name: Generate JaCoCo Report
+      run: mvn clean test jacoco:report --file Back-end/pom.xml
+    
+    - name: Upload JaCoCo Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: jacoco-report
+        path: Back-end/target/site/jacoco
