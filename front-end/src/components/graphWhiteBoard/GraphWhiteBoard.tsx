@@ -33,18 +33,6 @@ export interface Position {
   y: number;
 }
 
-// export interface Node {
-//   id: string; // Unique identifier for the node
-//   type: string; // Type of the node (e.g., 'input', 'output')
-//   position: Position; // Position of the node on the canvas
-//   data: NodeData; // Custom data associated with the node (e.g., the label)
-// }export interface Edge {
-//   id: string; // Unique identifier for the edge
-//   source: string; // ID of the source node
-//   target: string; // ID of the target node
-//   label?: string; // Optional label describing the relationship (e.g., 'inheritance', 'composition')
-// }
-
 // implementaiton of dagre in the graph
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -104,9 +92,9 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
     // creating nodes and edges from the jsonData
     jsonData.internalDependencyList.forEach((classItem) => {
       nodesList.push({
-        id: classItem.name.split(".").pop()!,
+        id: classItem.name,
         type: "default",
-        data: { label: classItem.name.split(".").pop()! },
+        data: { label: classItem.name.split(".").pop()!  },
         position: { x: 0, y: 0 }, // temporary position, will be set by dagre layout
       });
 
@@ -114,40 +102,38 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
       if (classItem.inherits) {
         edgesList.push({
           id: `e-${classItem.name}-${classItem.inherits}`,
-          source: classItem.name.split(".").pop()!,
-          target: classItem.inherits.split(".").pop()!,
+          source: classItem.name,
+          target: classItem.inherits,
           label: "inheritance",
+          markerEnd: {
+            type: MarkerType.Arrow, 
+          },
         });
       }
 
       // creating implementation edges
       if (classItem.implementationList.length > 0) {
-        classItem.implementationList.forEach((implementationList) => {
-          edgesList.push({
-            id: `e-${classItem.name}-${implementationList}`,
-            source: classItem.name.split('.').pop()!,
-            target: implementationList.split('.').pop()!,
-            label: 'implementation',
-          });
+        classItem.implementationList.forEach((implementation) => {
+          // Validate that the implementation target exists in the jsonData
+          const targetClass = jsonData.internalDependencyList.find(
+            (dep) => dep.name === implementation
+          );
+        
+          if (targetClass) {
+            edgesList.push({
+              id: `e-${classItem.name}-${implementation}`,
+              source: classItem.name,
+              target: implementation,
+              label: 'implementation',
+              markerEnd: {
+                type: MarkerType.Arrow, 
+              },
+            });
+          }
         });
       }
-      
-      // creating composition edges
-      // classItem.variableList.forEach(variable => {
-      //   if(variable.datatype.includes(jsonData.classContainer)) {
-      //     edgesList.push({
-      //       id: `e-${classItem.name}-${variable.identifier}`,
-      //       source: classItem.name.split('.').pop()!,
-      //       target: variable.datatype.split('.').pop()!,
-      //       label: 'composition',
-      //       markerEnd: {
-      //         type: MarkerType.Arrow,
-      //       },
-      //     });  
-      //   }
-        
-      // });
 
+      // creating composition edges
       classItem.variableList.forEach((variable) => {
         // Check if the datatype matches any class in the jsonData (composition relationship)
         const targetClass = jsonData.internalDependencyList.find(
@@ -157,8 +143,8 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
         if (targetClass) {
           edgesList.push({
             id: `e-${classItem.name}-${variable.datatype}`,
-            source: classItem.name.split('.').pop()!,
-            target: variable.datatype.split('.').pop()!,
+            source: classItem.name,
+            target: variable.datatype,
             label: 'composition',
             markerEnd: {
               type: MarkerType.Arrow, // Add arrow marker to indicate dependency direction
@@ -175,6 +161,24 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
 
   // filter change handler (updating node colors)
   const handleFilterChange = (filter: string) => {
+    // user clicks 'none' to remove filters
+    if (filter === 'nofilter') {
+      setNodes((nodes) =>
+        nodes.map((node) => ({
+          ...node,
+          style: { ...node.style, backgroundColor: 'white' }, // Reset to default node color
+        }))
+      );
+      setEdges((edges) =>
+        edges.map((edge) => ({
+          ...edge,
+          style: { stroke: '#888', strokeWidth: 1 }, // Reset edge style
+          markerEnd: { type: MarkerType.Arrow, color: '#888' }, // Reset arrow style
+        }))
+      );
+      return;
+    }
+
     // get edges that match the selected filter string
     const filteredEdges = edges.filter((edge) => edge.label === filter);
 
@@ -206,7 +210,34 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
           style: { ...node.style, backgroundColor: newColor }, // updating node style
         };
       })
-    )
+    );
+
+    // update edge styles based on the selected filter
+    setEdges((edges) =>
+      edges.map((edge) => {
+        let newEdgeStyle = { stroke: "#ddd", strokeWidth: 1 }; // default edge style for unselected edges
+        let arrowStyle = { type: MarkerType.Arrow, color: '#888' }; // default arrow style
+      
+        // apply specific styles for edges matching the selected filter
+        if (edge.label === filter) {
+          if (filter === "inheritance") {
+            newEdgeStyle = { stroke: "#5F9EA0", strokeWidth: 2 };
+            arrowStyle = { type: MarkerType.Arrow, color: '#5F9EA0' };
+          } else if (filter === "implementation") {
+            newEdgeStyle = { stroke: "#E1C16E", strokeWidth: 2}; 
+            arrowStyle = { type: MarkerType.Arrow, color: '#E1C16E' };
+          } else if (filter === "composition") {
+            newEdgeStyle = { stroke: "#8A9A5B", strokeWidth: 2 }; 
+            arrowStyle = { type: MarkerType.Arrow, color: '#8A9A5B' };
+          } 
+        }
+        return {
+          ...edge,
+          style: { ...edge.style, ...newEdgeStyle }, // updating edge style
+          markerEnd: arrowStyle,
+        };
+      })
+    );
   }
 
   return (
@@ -276,29 +307,19 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
             )}
           </Container>
         ) : (
-          // <>
-          //   <Typography variant="h4" gutterBottom>
-          //     Internal Dependency Graph
-          //   </Typography>
-          //   <Box
-          //     sx={{
-          //       bgcolor: "#ebedef",
-          //       height: "70vh",
-          //       padding: "10px",
-          //       marginTop: "50px",
-          //     }}
-          //   >
-          //     <ReactFlow
-          //       nodes={nodes}
-          //       edges={edges}
-          //       onNodesChange={onNodesChange}
-          //       onEdgesChange={onEdgesChange}
-          //       onConnect={onConnect}
-          //       fitView
-          //     />
-          //   </Box>
-          // </>
           <>
+            <Container sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+            }}>
+              <Typography variant="h5" gutterBottom>
+                Internal Dependency Graph
+              </Typography>
+              <Typography variant="h5" gutterBottom>
+                {/* put custom views button here */}
+              </Typography>
+            </Container>
             <Typography variant="body1" paragraph>
             <Container maxWidth='xl'>
             <Box sx={{ 
@@ -312,7 +333,17 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
                 
                 <ReactFlow 
                     nodes={nodes} 
-                    edges={edges} 
+                    edges={edges}
+                    defaultEdgeOptions={{
+                      style: {
+                        stroke: '#888',
+                        strokeWidth: 1,
+                      },
+                      markerEnd: {
+                        type: MarkerType.Arrow, 
+                        color: '#888',
+                      },
+                    }} 
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
@@ -336,7 +367,7 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
         )
       ) : (
         <>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             External Dependency Graph
           </Typography>
         </>

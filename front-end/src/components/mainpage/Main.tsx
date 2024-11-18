@@ -122,19 +122,7 @@ function Main() {
             boxSizing: 'border-box',
           }}
         >
-          <Container sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <Typography variant="h5" gutterBottom>
-              Internal Dependency Graph
-            </Typography>
-            <Typography variant="h5" gutterBottom>
-              {/* put custom views button here */}
-            </Typography>
-          </Container>
-          
+    
           <GraphWhiteBoard  jsonData={response} alignment={alignment} selectedClass={selectedClass} />
         </Box>
       </Grid2>
