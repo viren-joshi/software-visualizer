@@ -5,6 +5,7 @@ import {
   Typography,
   List,
   ListItemText,
+  Container,
 } from "@mui/material";
 import Sidebar from "../sidebar/Sidebar";
 import GraphWhiteBoard from "../graphWhiteBoard/GraphWhiteBoard";
@@ -64,6 +65,7 @@ function Main() {
   const [selectedClass, setSelectedClass] = useState<InternalDependency | null>(
     null
   ); // New state for selected class
+  const [selectedFilter, setSelectedFilter] = useState<string>(''); // state for new filter
   const handleChange = (
     event: React.MouseEvent<HTMLElement>,
     newAlignment: string | null
@@ -80,9 +82,13 @@ function Main() {
     );
     setSelectedClass(selected || null); // Update the selected class
   };
+  const handleFilterChange = (filter: string) => {
+    setSelectedFilter(filter); // updating selected filter state
+  };
+
   return (
     <Grid2 container spacing={2} sx={{ height: "100vh" }}>
-      <Grid2 size={3}>
+      <Grid2 size={2}>
         <Box
           sx={{
             height: "100%",
@@ -105,20 +111,19 @@ function Main() {
       <Divider orientation="vertical" flexItem sx={{ borderColor: "black" }} />
 
       {/* Right part */}
-      <Grid2 size={6}>
+      <Grid2 size={9}>
         <Box
           sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            padding: "20px",
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '20px 0px 20px 20px',
+            boxSizing: 'border-box',
           }}
         >
-          <GraphWhiteBoard
-            jsonData={response}
-            alignment={alignment}
-            selectedClass={selectedClass}
-          />
+    
+          <GraphWhiteBoard  jsonData={response} alignment={alignment} selectedClass={selectedClass} />
         </Box>
       </Grid2>
     </Grid2>
