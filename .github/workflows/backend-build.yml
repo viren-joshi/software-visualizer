@@ -40,3 +40,8 @@ jobs:
       run: |
         mkdir -p "/home/student/ci-cd-outputs/code-coverage/run-${GITHUB_RUN_ID}"
         cp -r "Back-end/target/site/jacoco" "/home/student/ci-cd-outputs/code-coverage/run-${GITHUB_RUN_ID}"
+    
+    - name: Run Designite
+      run: |
+        mkdir -p "/home/student/ci-cd-outputs/code-smells/run-${GITHUB_RUN_ID}"
+        java -jar /home/student/designite/DesigniteJava.jar -i Back-end -o "/home/student/ci-cd-outputs/code-smells/run-${GITHUB_RUN_ID}"
