@@ -33,5 +33,10 @@ jobs:
     - name: Build with Maven
       run: mvn clean package --file Back-end/pom.xml
 
-    - name: Run Unit Tests
-      run: mvn test --file Back-end/pom.xml
+    - name: Run Unit Tests & Generate JaCoCo Report
+      run: mvn clean test jacoco:report --file Back-end/pom.xml
+    
+    - name: Save JaCoCo Report
+      run: |
+        mkdir -p "/home/student/ci-cd-outputs/code-coverage/run-${GITHUB_RUN_ID}"
+        cp -r "Back-end/target/site/jacoco" "/home/student/ci-cd-outputs/code-coverage/run-${GITHUB_RUN_ID}"
