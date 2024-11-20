@@ -5,6 +5,7 @@ import Main from "./components/mainpage/Main";
 import NotFound from "./components/NotFound";
 import UploadFile from './components/uploadfile/UploadFile';
 import SignInSignUp from './components/signIn/SignInSignUp';
+import SavedProjects from './components/savedProjects/savedProjects';
 import { Box, CircularProgress } from '@mui/material';
 import { auth } from './firebase-setup';
 
@@ -35,11 +36,19 @@ function App() {
         <Routes>
           <Route 
             path="/" 
-            element={user ? <UploadFile user={user} /> : <Navigate to="/signin" replace />} 
+            element={user ? <Navigate to="/projects" replace /> : <Navigate to="/signin" replace />} 
           />
           <Route 
             path="/signin" 
-            element={user ? <Navigate to="/" replace /> : <SignInSignUp />} 
+            element={user ? <Navigate to="/projects" replace /> : <SignInSignUp />} 
+          />
+          <Route 
+            path="/projects" 
+            element={user ? <SavedProjects user={user} /> : <Navigate to="/signin" replace />} 
+          />
+          <Route 
+            path="/upload" 
+            element={user ? <UploadFile user={user} /> : <Navigate to="/signin" replace />} 
           />
           <Route 
             path="/mainpage" 
