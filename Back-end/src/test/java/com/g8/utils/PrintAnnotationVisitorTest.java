@@ -67,7 +67,8 @@ public class PrintAnnotationVisitorTest {
         annotationVisitor.visitAnnotation("nestedAnnotation", "Lcom/example/NestedAnnotation;");
 
         // Check if all elements are included in the formatted string
-        assertEquals("MyAnnotation(key1 = value1, enumKey = com/example/Enum.ENUM_CONSTANT, nestedAnnotation = @com.example.NestedAnnotation)", annotationVisitor.getFullAnnotation());
+        String expected = "MyAnnotation(key1 = value1, enumKey = com/example/Enum.ENUM_CONSTANT, nestedAnnotation = @com.example.NestedAnnotation)";
+        assertEquals(expected, annotationVisitor.getFullAnnotation());
     }
 
     @Test

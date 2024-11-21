@@ -1,10 +1,12 @@
 package com.g8.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,18 +20,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class DependencyHandlerTest {
+public class AnalyzeProjectServiceTest {
 
-    private DependencyHandler dependencyHandler;
+    private AnalyzeProjectService analyzeProjectService;
     private static final String TEST_CLASS_CONTAINER = "com/blog";
     private static final String TEST_JAR_FILE_NAME = "blog-0.0.1-SNAPSHOT.jar";
     private static String TEST_JAR_FILE_PATH = "src" + File.separator + "test" + File.separator + "resources" + File.separator + TEST_JAR_FILE_NAME;
@@ -42,22 +43,18 @@ public class DependencyHandlerTest {
 
     private InputStream pomInputStream;
 
-    private ObjectMapper objectMapper;
-
     @BeforeEach
     void setUp() {
-        dependencyHandler = new DependencyHandler();
-        objectMapper = new ObjectMapper();
-        dependencyHandler.setUSER_PACKAGE_PREFIX(TEST_CLASS_CONTAINER);
+        analyzeProjectService = new AnalyzeProjectService();
+        analyzeProjectService.setUSER_PACKAGE_PREFIX(TEST_CLASS_CONTAINER);
     }
 
     @Test
     void testAnalyzePomDependencies_entryIsNull() throws Exception {
 
-        String result = dependencyHandler.analyzePomDependencies(null, jarFile);
+        analyzeProjectService.analyzePomDependencies(null, jarFile);
 
-        List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
-        assertTrue(resultList.isEmpty());
+        assertTrue(analyzeProjectService.getExternalForTest().isEmpty());
     }
 
     @Test
@@ -67,10 +64,10 @@ public class DependencyHandlerTest {
 
         when(jarFile.getInputStream(jarEntry)).thenReturn(pomInputStream);
 
-        String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
+        analyzeProjectService.analyzePomDependencies(jarEntry, jarFile);
 
-        String expected = "[{\"groupId\":\"org.springframework\",\"scope\":\"compile\",\"artifactId\":\"spring-core\",\"version\":\"5.3.10\"}]";
-        assertEquals(expected, result);
+        String expected = "[{groupId=org.springframework, scope=compile, artifactId=spring-core, version=5.3.10}]";
+        assertEquals(expected, analyzeProjectService.getExternalForTest().toString());
     }
 
     @Test
@@ -80,10 +77,9 @@ public class DependencyHandlerTest {
 
         when(jarFile.getInputStream(jarEntry)).thenReturn(pomInputStream);
 
-        String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
+        analyzeProjectService.analyzePomDependencies(jarEntry, jarFile);
 
-        List<Map<String, String>> resultList = objectMapper.readValue(result, List.class);
-        assertTrue(resultList.isEmpty());
+        assertTrue(analyzeProjectService.getExternalForTest().isEmpty());
     }
 
     @Test
@@ -93,10 +89,10 @@ public class DependencyHandlerTest {
 
         when(jarFile.getInputStream(jarEntry)).thenReturn(pomInputStream);
 
-        String result = dependencyHandler.analyzePomDependencies(jarEntry, jarFile);
+        analyzeProjectService.analyzePomDependencies(jarEntry, jarFile);
 
-        String expected = "[{\"groupId\":\"org.springframework\",\"scope\":\"\",\"artifactId\":\"spring-core\",\"version\":\"\"}]";
-        assertEquals(expected, result);
+        String expected = "[{groupId=org.springframework, scope=, artifactId=spring-core, version=}]";
+        assertEquals(expected, analyzeProjectService.getExternalForTest().toString());
     }
 
     @Test
@@ -111,7 +107,7 @@ public class DependencyHandlerTest {
         tempFile.deleteOnExit();
 
         // Call the saveFile method
-        dependencyHandler.saveFile(mockFile, tempFile.getAbsolutePath());
+        analyzeProjectService.saveFile(mockFile, tempFile.getAbsolutePath());
 
         // Verify the contents of the temporary file match the original content
         byte[] savedFileContent = Files.readAllBytes(tempFilePath);
@@ -121,32 +117,48 @@ public class DependencyHandlerTest {
     @Test
     void testAnalyzeFile_withZeroClasses() throws Exception {
 
-        dependencyHandler.setUSER_PACKAGE_PREFIX("org/example");
+        analyzeProjectService.setUSER_PACKAGE_PREFIX("org/example");
         TEST_JAR_FILE_PATH = "src/test/resources/empty-1.0-SNAPSHOT.jar";
 
-        assertDoesNotThrow(() -> dependencyHandler.analyzeFile(TEST_JAR_FILE_PATH));
+        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class);
+             MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
+
+            firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
+            mockedStatic.when(() -> DependencyRetrievalService.saveData(any(), any()))
+                    .thenReturn("mocked response");
+
+            assertDoesNotThrow(() -> analyzeProjectService.analyzeFile(TEST_JAR_FILE_PATH));
+        }
     }
 
     @Test
     void testAnalyzeUploadedProject_shouldNotThrowException() throws Exception {
 
-        // Mock DependencyHandler object and methods
+        // Mock AnalyzeProjectService object and methods
         File file = new File(TEST_JAR_FILE_PATH);
         FileInputStream fileInputStream = new FileInputStream(file);
 
         // Creating a MultipartFile from an existing file
-        MockMultipartFile mmf =  new MockMultipartFile(file.getName(), file.getName(), "application/java-archive", fileInputStream);
+        MockMultipartFile mmf = new MockMultipartFile(file.getName(), file.getName(), "application/java-archive", fileInputStream);
 
         // Verify that saveFile and analyzeFile were called
-        assertDoesNotThrow(() -> dependencyHandler.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
+        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class);
+             MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
+            // Define the behavior of saveData
+            firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
+            mockedStatic.when(() -> DependencyRetrievalService.saveData(any(), any()))
+                    .thenReturn("mocked response");
 
-        Files.delete(Paths.get(TEST_JAR_FILE_NAME));
+            assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
+
+            Files.delete(Paths.get(TEST_JAR_FILE_NAME));
+        }
     }
 
     @Test
     void testAnalyzeUploadedProject_shouldFail() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "test data".getBytes());
-        ResponseEntity<String> result = dependencyHandler.analyzeUploadedProject(file, "com.g8.test");
+        ResponseEntity<String> result = analyzeProjectService.analyzeUploadedProject(file, "com.g8.test");
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
     }
 

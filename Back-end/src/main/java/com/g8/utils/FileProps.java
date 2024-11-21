@@ -1,14 +1,12 @@
 package com.g8.utils;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class FileProps {
 
+    // @Data annotation can not be set on this field
+    @Setter
+    @Getter
     private static String filePath;
-
-    public static String getFilePath() {
-        return filePath;
-    }
-
-    public static void setFilePath(String filePath) {
-        FileProps.filePath = filePath;
-    }
 }

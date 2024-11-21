@@ -13,7 +13,6 @@ public class FieldAnnotationVisitor extends FieldVisitor {
     private FieldInfo fieldInfo;
     private final List<PrintAnnotationVisitor> annotations = new ArrayList<>();
 
-
     public FieldAnnotationVisitor(FieldInfo fieldInfo) {
         super(Opcodes.ASM9);
         this.fieldInfo = fieldInfo;
@@ -35,7 +34,7 @@ public class FieldAnnotationVisitor extends FieldVisitor {
 
         for (PrintAnnotationVisitor annotationVisitor : annotations) {
             String fullAnnotation = annotationVisitor.getFullAnnotation();
-            fieldInfo.getAnnotations().add(fullAnnotation);
+            fieldInfo.getAnnotationList().add(fullAnnotation);
         }
 
         // Reset list for the next visit

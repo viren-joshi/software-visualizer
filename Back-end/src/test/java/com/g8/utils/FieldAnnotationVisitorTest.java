@@ -91,12 +91,12 @@ public class FieldAnnotationVisitorTest {
 
     // Method to assert that the field contains the expected number of annotations
     private void assertAnnotationSize(FieldInfo fieldInfo) {
-        List<String> annotations = fieldInfo.getAnnotations();
+        List<String> annotations = fieldInfo.getAnnotationList();
         assertFalse(annotations.isEmpty());
     }
 
     private void assertAnnotationValue(FieldInfo fieldInfo, String expectedValue) {
-        List<String> annotations = fieldInfo.getAnnotations();
+        List<String> annotations = fieldInfo.getAnnotationList();
         assertEquals(expectedValue, annotations.get(0));
     }
 }
