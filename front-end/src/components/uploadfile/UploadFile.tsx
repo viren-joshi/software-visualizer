@@ -21,6 +21,7 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import styled from "@emotion/styled";
 import { User } from "firebase/auth";
 import { getAuth, signOut } from "firebase/auth";
+import JSZip from 'jszip';
 import axios from "axios";
 
 const VisuallyHiddenInput = styled('input')({
@@ -49,30 +50,68 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
   const navigate = useNavigate();
   const auth = getAuth();
 
-  const handleFileChange = (event: any) => {
+  const handleFileChange = async (event: any) => {
     const file = event.target.files?.[0];
-    validateAndSetFile(file);
-  };
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    event.preventDefault();
-    const file = event.dataTransfer.files[0];
-    validateAndSetFile(file);
-  };
-
-  const validateAndSetFile = (file: File | undefined) => {
     if (file) {
-      const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      if (fileExtension !== 'jar') {
-        setError("Invalid file type. Please upload a JAR file.");
-        setSelectedFile(null);
-      } else {
-        setError(null);
+      const isValid = await validateJarFile(file);
+      if (isValid) {
         setSelectedFile(file);
+        setError(null);
       }
     }
   };
+
+  const handleDrop = async (event: React.DragEvent) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      const isValid = await validateJarFile(file);
+      if (isValid) {
+        setSelectedFile(file);
+        setError(null);
+      }
+    }
+  };
+
+  const validateJarFile = async (file: File): Promise<boolean> => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (fileExtension !== 'jar') {
+      setError("Invalid file type. Please upload a JAR file.");
+      setSelectedFile(null);
+      return false;
+    }
+
+    try {
+      const zip = new JSZip();
+      const contents = await zip.loadAsync(file);
+      const classFiles = Object.keys(contents.files).filter(filename => filename.endsWith('.class'));
+
+      if (classFiles.length === 0) {
+        setError("The JAR file is empty or contains no classes.");
+        setSelectedFile(null);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      setError("Failed to read the JAR file. Please try again.");
+      setSelectedFile(null);
+      return false;
+    }
+  };
+
+  // const validateAndSetFile = (file: File | undefined) => {
+  //   if (file) {
+  //     const fileExtension = file.name.split('.').pop()?.toLowerCase();
+  //     if (fileExtension !== 'jar') {
+  //       setError("Invalid file type. Please upload a JAR file.");
+  //       setSelectedFile(null);
+  //     } else {
+  //       setError(null);
+  //       setSelectedFile(file);
+  //     }
+  //   }
+  // };
 
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
