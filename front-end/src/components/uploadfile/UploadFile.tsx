@@ -100,19 +100,6 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
     }
   };
 
-  // const validateAndSetFile = (file: File | undefined) => {
-  //   if (file) {
-  //     const fileExtension = file.name.split('.').pop()?.toLowerCase();
-  //     if (fileExtension !== 'jar') {
-  //       setError("Invalid file type. Please upload a JAR file.");
-  //       setSelectedFile(null);
-  //     } else {
-  //       setError(null);
-  //       setSelectedFile(file);
-  //     }
-  //   }
-  // };
-
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
   };
