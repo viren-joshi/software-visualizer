@@ -7,7 +7,6 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.common.reflect.TypeToken;
-import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 
 import java.lang.reflect.Type;
@@ -15,16 +14,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+@Service
 public class DependencyRetrievalService {
 
-    private static final Firestore firestore = FirestoreClient.getFirestore();
-    private static final CollectionReference collectionReference = firestore.collection("projects");
+    private final CollectionReference collectionReference;
     private static final Gson gson = new Gson();
 
-    private DependencyRetrievalService() {}
+    DependencyRetrievalService(Firestore firestore) {
+        this.collectionReference = firestore.collection("projects");
+    }
 
-    public static String getInternalDependencies(String projectId) {
+    @Async
+    public CompletableFuture<String> getInternalDependencies(String projectId) {
 
         try {
             Thread.sleep(1000);
@@ -42,7 +48,7 @@ public class DependencyRetrievalService {
 
                 // Convert the list of ClassInfo objects to JSON
                 String jsonOutput = gson.toJson(dependencies);
-                return jsonOutput;
+                return CompletableFuture.completedFuture(jsonOutput);
             }
 
             return null;
@@ -51,8 +57,9 @@ public class DependencyRetrievalService {
             throw new RuntimeException("Error retrieving internal dependencies: " + e.getMessage());
         }
     }
-
-    public static String getClassList(String projectId) {
+    
+    @Async
+    public CompletableFuture<String> getClassList(String projectId) {
 
         try {
 
@@ -72,7 +79,7 @@ public class DependencyRetrievalService {
                     classes.add(info.getName());
                 }
 
-                return String.join(",", classes);
+                return CompletableFuture.completedFuture(String.join(",", classes));
             }
             return null;
 
@@ -81,7 +88,8 @@ public class DependencyRetrievalService {
         }
     }
 
-    public static String getExternalDependencies(String projectId) {
+    @Async
+    public CompletableFuture<String> getExternalDependencies(String projectId) {
 
         try {
             // Retrieve the collection with the name `projectId`
@@ -96,7 +104,7 @@ public class DependencyRetrievalService {
                 List<ExternalDependencyInfo> dependencies = gson.fromJson(gson.toJson(projects), type);
 
                 // Convert the list of ClassInfo objects to JSON
-                return gson.toJson(dependencies);
+                return CompletableFuture.completedFuture(gson.toJson(dependencies));
             }
 
             return null;
@@ -106,7 +114,8 @@ public class DependencyRetrievalService {
         }
     }
 
-    public static String saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies) {
+    @Async
+    public CompletableFuture<String> saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies) {
         DocumentReference documentReference = collectionReference.document();
 
         // Prepare data for both internal and external dependencies
@@ -118,6 +127,6 @@ public class DependencyRetrievalService {
         documentReference.set(dependenciesData);
 
         // Retrieve the generated document ID
-        return documentReference.getId();
+        return CompletableFuture.completedFuture(documentReference.getId());
     }
 }

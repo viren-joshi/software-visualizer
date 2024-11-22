@@ -3,6 +3,9 @@ package com.g8.controller;
 import com.g8.service.AuthService;
 import com.g8.service.DependencyRetrievalService;
 import com.g8.service.AnalyzeProjectService;
+
+import java.util.concurrent.CompletableFuture;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +19,13 @@ public class UploadController {
 
     private final AnalyzeProjectService analyzeProjectService;
     private final AuthService authService;
+    private final DependencyRetrievalService dependencyRetrievalService;
 
     @Autowired
-    public UploadController(AnalyzeProjectService analyzeProjectService, AuthService authService) {
+    public UploadController(AnalyzeProjectService analyzeProjectService, AuthService authService, DependencyRetrievalService dependencyRetrievalService) {
         this.analyzeProjectService = analyzeProjectService;
         this.authService = authService;
+        this.dependencyRetrievalService = dependencyRetrievalService;
     }
 
     // Saves the uploaded file and analyzes it
@@ -56,8 +61,9 @@ public class UploadController {
         }
         try {
             // Retrieve internal dependencies after successful authorization
-            String response = DependencyRetrievalService.getInternalDependencies(projectId);
-            return ResponseEntity.ok(response);
+            CompletableFuture<String> response = dependencyRetrievalService.getInternalDependencies(projectId);
+            response.join();
+            return ResponseEntity.ok(response.get());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve internal dependencies");
         }
@@ -72,8 +78,9 @@ public class UploadController {
         }
         try {
             // Retrieve external dependencies after successful authorization
-            String response = DependencyRetrievalService.getExternalDependencies(projectId);
-            return ResponseEntity.ok(response);
+            CompletableFuture<String> response = dependencyRetrievalService.getExternalDependencies(projectId);
+            response.join();
+            return ResponseEntity.ok(response.get());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve external dependencies");
         }
@@ -88,8 +95,9 @@ public class UploadController {
         }
         try {
             // Retrieve external dependencies after successful authorization
-            String response = DependencyRetrievalService.getClassList(projectId);
-            return ResponseEntity.ok(response);
+            CompletableFuture<String> response = dependencyRetrievalService.getClassList(projectId);
+            response.join();
+            return ResponseEntity.ok(response.get());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve external dependencies");
         }

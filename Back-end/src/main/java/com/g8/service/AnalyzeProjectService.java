@@ -8,6 +8,7 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.objectweb.asm.ClassReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -39,13 +41,17 @@ public class AnalyzeProjectService {
     // Stores nested class relationship
     private Map<String, List<String>> parentClassToNestedClassesMap;
 
+    @Autowired
+    private DependencyRetrievalService dependencyRetrievalService;
+
     private Gson gson;
 
-    public AnalyzeProjectService() {
+    public AnalyzeProjectService(DependencyRetrievalService dependencyRetrievalService) {
         this.internalDependencies = new ArrayList<>();
         this.classInfoMap = new HashMap<>();
         this.parentClassToNestedClassesMap = new HashMap<>();
         this.externalDependencies = new ArrayList<>();
+        this.dependencyRetrievalService = dependencyRetrievalService;
         gson = new Gson();
     }
 
@@ -99,7 +105,9 @@ public class AnalyzeProjectService {
         }
 
         // Create a new document in the Firestore collection "projects" with an auto-generated ID
-        return DependencyRetrievalService.saveData(internalDependencies, externalDependencies);
+        CompletableFuture<String> documentId = dependencyRetrievalService.saveData(internalDependencies, externalDependencies);
+        documentId.join();
+        return documentId.get();
     }
 
 
