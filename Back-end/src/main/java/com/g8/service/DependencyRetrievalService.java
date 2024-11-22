@@ -33,8 +33,6 @@ public class DependencyRetrievalService {
     public CompletableFuture<String> getInternalDependencies(String projectId) {
 
         try {
-            Thread.sleep(1000);
-
             // Retrieve the collection with the name `projectId`
             DocumentSnapshot projectCollection = collectionReference.document(projectId).get().get();
 
