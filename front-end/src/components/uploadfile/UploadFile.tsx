@@ -99,9 +99,12 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
         throw new Error('Upload failed');
       }
 
+      const project_id = uploadResponse.data;
+
       const internapDependencies = await axios.get(`${server_url}/initialize/intDep`, {
         headers: {
           'Authorization': token,
+          'project_id': project_id,
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -109,6 +112,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
       const externalDependencies = await axios.get(`${server_url}/initialize/extDep`, {
         headers: {
           'Authorization': token,
+          'project_id': project_id,
           'Content-Type': 'multipart/form-data',
         },
       });
@@ -116,6 +120,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
       const classList = await axios.get(`${server_url}/initialize/classList`, {
         headers: {
           'Authorization': token,
+          'project_id': project_id,
           'Content-Type': 'multipart/form-data',
         },
       });

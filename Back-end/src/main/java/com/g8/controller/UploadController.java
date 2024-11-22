@@ -1,16 +1,15 @@
 package com.g8.controller;
 
+import com.g8.service.AnalyzeProjectService;
 import com.g8.service.AuthService;
 import com.g8.service.DependencyRetrievalService;
-import com.g8.service.AnalyzeProjectService;
-
-import java.util.concurrent.CompletableFuture;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/initialize")

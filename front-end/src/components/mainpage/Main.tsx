@@ -55,8 +55,10 @@ function Main() {
   const location = useLocation();
   const { response } = location.state || {};
   const classNames = response.classNames
-    .split(",")
-    .map((className: string) => className.trim().split(".").pop());
+      .map((className: string) => className.trim().split(".").pop());
+
+  console.log(classNames);
+  
   const extDependencies = response.externalDependencyList.map(
     (externalDependency: MavenDependency) => externalDependency.artifactId
   );

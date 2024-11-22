@@ -8,16 +8,14 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
+import java.util.concurrent.ExecutionException;
 
 @Service
 public class DependencyRetrievalService {
@@ -64,20 +62,10 @@ public class DependencyRetrievalService {
             // Retrieve the collection with the name `projectId`
             DocumentSnapshot projectCollection = collectionReference.document(projectId).get().get();
 
-            List<Map<String, Object>> projects = (List<Map<String, Object>>) projectCollection.get("intDep");
+            List<String> classList = (List<String>) projectCollection.get("classList");
 
-            List<String> classes = new ArrayList<>();
-
-            if (projects != null && !projects.isEmpty()) {
-
-                // Loop through each map and convert to ClassInfo object
-                for (Map<String, Object> intDep : projects) {
-                    // Deserialize the map into a ClassInfo object
-                    ClassInfo info = gson.fromJson(gson.toJson(intDep), ClassInfo.class);
-                    classes.add(info.getName());
-                }
-
-                return CompletableFuture.completedFuture(String.join(",", classes));
+            if (classList != null && !classList.isEmpty()) {
+                return CompletableFuture.completedFuture(gson.toJson(classList));
             }
             return null;
 
@@ -113,16 +101,17 @@ public class DependencyRetrievalService {
     }
 
     @Async
-    public CompletableFuture<String> saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies) {
+    public CompletableFuture<String> saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies, List<String> classList) throws ExecutionException, InterruptedException {
         DocumentReference documentReference = collectionReference.document();
 
         // Prepare data for both internal and external dependencies
         Map<String, Object> dependenciesData = new HashMap<>();
-        dependenciesData.put("intDep", internalDependencies);  // Internal dependencies
-        dependenciesData.put("extDep", externalDependencies);  // External dependencies
+        dependenciesData.put("intDep", internalDependencies);
+        dependenciesData.put("extDep", externalDependencies);
+        dependenciesData.put("classList", classList);
 
         // Save the data into the Firestore document
-        documentReference.set(dependenciesData);
+        documentReference.set(dependenciesData).get();
 
         // Retrieve the generated document ID
         return CompletableFuture.completedFuture(documentReference.getId());

@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -41,6 +42,8 @@ public class AnalyzeProjectService {
     // Stores nested class relationship
     private Map<String, List<String>> parentClassToNestedClassesMap;
 
+    private List<String> classList;
+
     @Autowired
     private DependencyRetrievalService dependencyRetrievalService;
 
@@ -51,6 +54,7 @@ public class AnalyzeProjectService {
         this.classInfoMap = new HashMap<>();
         this.parentClassToNestedClassesMap = new HashMap<>();
         this.externalDependencies = new ArrayList<>();
+        this.classList = new ArrayList<>();
         this.dependencyRetrievalService = dependencyRetrievalService;
         gson = new Gson();
     }
@@ -105,7 +109,7 @@ public class AnalyzeProjectService {
         }
 
         // Create a new document in the Firestore collection "projects" with an auto-generated ID
-        CompletableFuture<String> documentId = dependencyRetrievalService.saveData(internalDependencies, externalDependencies);
+        CompletableFuture<String> documentId = dependencyRetrievalService.saveData(internalDependencies, externalDependencies, classList);
         documentId.join();
         return documentId.get();
     }
@@ -124,6 +128,8 @@ public class AnalyzeProjectService {
 
             Map<String, Object> classInfoMap = gson.fromJson(gson.toJson(classInfo), Map.class);
             internalDependencies.add(classInfoMap);
+            if(!classList.contains(classInfo.getName()))
+                classList.add(classInfo.getName());
         }
     }
 

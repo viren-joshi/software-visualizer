@@ -128,7 +128,7 @@ public class AnalyzeProjectServiceTest {
              MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
 
             firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any()))
+            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any(), any()))
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeFile(TEST_JAR_FILE_PATH));
@@ -150,7 +150,7 @@ public class AnalyzeProjectServiceTest {
              MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
             // Define the behavior of saveData
             firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any()))
+            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any(), any()))
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));

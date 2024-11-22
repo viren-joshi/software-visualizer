@@ -3,11 +3,8 @@ package com.g8.controller;
 import com.g8.service.AnalyzeProjectService;
 import com.g8.service.AuthService;
 import com.g8.service.DependencyRetrievalService;
-import com.google.cloud.firestore.Firestore;
-import com.google.firebase.cloud.FirestoreClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -20,10 +17,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.util.concurrent.CompletableFuture;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,6 +35,9 @@ public class UploadControllerTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private DependencyRetrievalService dependencyRetrievalService;
 
     private String baseURL = "http://localhost:8080/initialize";
     private final String authorizationToken = "mock-token";
@@ -103,20 +103,50 @@ public class UploadControllerTest {
                 .andExpect(content().string("Failed to analyze project"));
     }
 
-    // Reusing existing tests
     @Test
     public void testGetInternalDependencies() throws Exception {
-        testAssertNonEmptyJson("/intDep");
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/intDep");
+        builder.header("Authorization", authorizationToken);
+        builder.header("project_id", projectId);
+        builder.contentType(MediaType.MULTIPART_FORM_DATA);
+
+        CompletableFuture<String> mockInternalDeps = CompletableFuture.completedFuture("{\"internalDeps\": []}");
+        Mockito.when(dependencyRetrievalService.getInternalDependencies(projectId))
+                .thenReturn(mockInternalDeps);
+
+        mockMvc.perform(builder)
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"internalDeps\": []}"));
     }
 
     @Test
     public void testGetClasses() throws Exception {
-        testAssertNonEmptyJson("/classList");
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/classList")
+                .header("Authorization", authorizationToken)
+                .header("project_id", projectId);
+
+        CompletableFuture<String> mockClassList = CompletableFuture.completedFuture("{\"classList\": []}");
+        Mockito.when(dependencyRetrievalService.getClassList(projectId))
+                .thenReturn(mockClassList);
+
+        mockMvc.perform(builder)
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"classList\": []}"));
     }
 
     @Test
     public void testGetExternalDependencies() throws Exception {
-        testAssertNonEmptyJson("/extDep");
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/extDep")
+                .header("Authorization", authorizationToken)
+                .header("project_id", projectId);
+
+        CompletableFuture<String> mockExternalDeps = CompletableFuture.completedFuture("{\"externalDeps\": []}");
+        Mockito.when(dependencyRetrievalService.getExternalDependencies(projectId))
+                .thenReturn(mockExternalDeps);
+
+        mockMvc.perform(builder)
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"externalDeps\": []}"));
     }
 
     private void testAssertNonEmptyJson(String endpoint) throws Exception {
@@ -125,13 +155,8 @@ public class UploadControllerTest {
         builder.header("project_id", projectId);
         builder.contentType(MediaType.MULTIPART_FORM_DATA);
 
-        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class);
-             MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
-
-            firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-
-            mockMvc.perform(builder)
-                    .andExpect(status().isOk());
-        }
+        mockMvc.perform(builder)
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"internalDeps\": []}"));
     }
 }

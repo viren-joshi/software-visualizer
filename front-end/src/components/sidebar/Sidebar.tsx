@@ -84,7 +84,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         <>
           {" "}
           <Typography variant="h5" gutterBottom>
-            Class List
+            Class List 
+            <Typography variant="h6"> ({classNames.length} classes) </Typography>
           </Typography>
           {filteredClassNames.map((name: any, index: any) => {
             return (

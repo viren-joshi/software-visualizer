@@ -3,10 +3,7 @@ package com.g8.service;
 import com.g8.model.ClassInfo;
 import com.g8.model.ExternalDependencyInfo;
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.CollectionReference;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.*;
 import com.google.common.reflect.TypeToken;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
@@ -30,14 +27,21 @@ public class DependencyRetrievalServiceTest {
 
     @Mock
     private Firestore mockFirestore;
+
     @Mock
     private CollectionReference mockCollectionReference;
+
     @Mock
     private DocumentReference mockDocumentReference;
+
     @Mock
     private ApiFuture<DocumentSnapshot> mockFuture;
+
     @Mock
     private DocumentSnapshot mockDocumentSnapshot;
+
+    @Mock
+    private ApiFuture<WriteResult> mockWriteResult;
 
     @InjectMocks
     private DependencyRetrievalService dependencyRetrievalService;
@@ -46,16 +50,20 @@ public class DependencyRetrievalServiceTest {
 
     @BeforeEach
     void setUp() throws ExecutionException, InterruptedException {
+
         MockitoAnnotations.openMocks(this);
         mockFirestore = mock(Firestore.class);
         mockCollectionReference = mock(CollectionReference.class);
         mockDocumentReference = mock(DocumentReference.class);
         mockFuture = mock(ApiFuture.class);
         mockDocumentSnapshot = mock(DocumentSnapshot.class);
+
         when(mockFirestore.collection("projects")).thenReturn(mockCollectionReference);
         when(mockCollectionReference.document("testProject")).thenReturn(mockDocumentReference);
         when(mockDocumentReference.get()).thenReturn(mockFuture);
         when(mockFuture.get()).thenReturn(mockDocumentSnapshot);
+        when(mockDocumentReference.set(any())).thenReturn(mockWriteResult);
+
         dependencyRetrievalService = new DependencyRetrievalService(mockFirestore);
     }
 
@@ -86,12 +94,9 @@ public class DependencyRetrievalServiceTest {
 
     @Test
     void testGetClassList() throws Exception {
-        List<Map<String, Object>> intDepData = List.of(
-                Map.of("name", "ClassA"),
-                Map.of("name", "ClassB")
-        );
+        List<String> classList = List.of("ClassA", "ClassB");
 
-        when(mockDocumentSnapshot.get("intDep")).thenReturn(intDepData);
+        when(mockDocumentSnapshot.get("classList")).thenReturn(classList);
 
         try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
             firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
@@ -99,7 +104,7 @@ public class DependencyRetrievalServiceTest {
             CompletableFuture<String> result = dependencyRetrievalService.getClassList("testProject");
             result.join();
 
-            assertEquals("ClassA,ClassB", result.get());
+            assertEquals(gson.toJson(classList), result.get());
         }
     }
 
@@ -137,13 +142,15 @@ public class DependencyRetrievalServiceTest {
                 Map.of("artifactId", "ExternalLibB")
         );
 
+        List<String> classList = List.of("ClassA", "ClassB");
+
         when(mockCollectionReference.document()).thenReturn(mockDocumentReference);
         when(mockDocumentReference.getId()).thenReturn("mock-id");
 
         try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
             firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
 
-            CompletableFuture<String> response =  dependencyRetrievalService.saveData(internalDependencies, externalDependencies);
+            CompletableFuture<String> response =  dependencyRetrievalService.saveData(internalDependencies, externalDependencies, classList);
             response.join();
 
             verify(mockDocumentReference, times(1)).set(any());
