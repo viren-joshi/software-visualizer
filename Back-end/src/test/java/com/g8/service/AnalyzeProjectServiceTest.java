@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.CompletableFuture;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -41,11 +42,14 @@ public class AnalyzeProjectServiceTest {
     @Mock
     private JarEntry jarEntry;
 
+    @Mock 
+    private DependencyRetrievalService dependencyRetrievalService;
+
     private InputStream pomInputStream;
 
     @BeforeEach
     void setUp() {
-        analyzeProjectService = new AnalyzeProjectService();
+        analyzeProjectService = new AnalyzeProjectService(dependencyRetrievalService);
         analyzeProjectService.setUSER_PACKAGE_PREFIX(TEST_CLASS_CONTAINER);
     }
 
@@ -124,8 +128,8 @@ public class AnalyzeProjectServiceTest {
              MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
 
             firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-            mockedStatic.when(() -> DependencyRetrievalService.saveData(any(), any()))
-                    .thenReturn("mocked response");
+            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any()))
+                    .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeFile(TEST_JAR_FILE_PATH));
         }
@@ -146,8 +150,8 @@ public class AnalyzeProjectServiceTest {
              MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
             // Define the behavior of saveData
             firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-            mockedStatic.when(() -> DependencyRetrievalService.saveData(any(), any()))
-                    .thenReturn("mocked response");
+            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any()))
+                    .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
 
