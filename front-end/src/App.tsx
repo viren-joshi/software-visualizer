@@ -52,7 +52,7 @@ function App() {
           />
           <Route 
             path="/mainpage" 
-            element={user ? <Main /> : <Navigate to="/signin" replace />} 
+            element={user ? <Main user={user} /> : <Navigate to="/signin" replace />} 
           />
           <Route path="*" element={<NotFound />} />
         </Routes>

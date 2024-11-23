@@ -1,5 +1,5 @@
-import {
-  Grid2,
+import { ThemeProvider, createTheme, CssBaseline, Button, AppBar, Toolbar,
+  Avatar, IconButton, useMediaQuery,
   Box,
   Divider,
   Typography,
@@ -7,16 +7,17 @@ import {
   ListItemText,
   Container,
 } from "@mui/material";
+import { CloudUpload, FolderOpen, Menu as MenuIcon } from '@mui/icons-material'
 import Sidebar from "../sidebar/Sidebar";
 import GraphWhiteBoard from "../graphWhiteBoard/GraphWhiteBoard";
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from 'react-router-dom';
 import { useState } from "react";
+import { User } from 'firebase/auth';
 
 export interface ClassContainer {
   internalDependencyList: InternalDependency[];
   externalDependencyList: MavenDependency[];
 }
-
 export interface InternalDependency {
   name: string;
   inherits: string;
@@ -29,7 +30,6 @@ export interface InternalDependency {
   annotations: string[];
   implementationList: string[];
 }
-
 export interface Variable {
   identifier: string;
   datatype: string;
@@ -37,37 +37,49 @@ export interface Variable {
   isStatic: boolean;
   isAnnotated: boolean;
 }
-
 export interface Method {
   methodName: string;
   annotations: string[];
   isStatic: boolean;
 }
-
 export interface MavenDependency {
   groupId: string; // Group identifier for the dependency
   scope: string; // Scope of the dependency (e.g., compile, test, etc.), can be empty
   artifactId: string; // Artifact identifier for the dependency
   version: string; // Version of the artifact (can be empty)
 }
-
-function Main() {
+interface MainProps {
+  user: User;
+}
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#1976d2",
+    },
+    secondary: {
+      main: "#dc004e",
+    },
+    background: {
+      default: "#f5f5f5",
+      paper: "#ffffff",
+    },
+  },
+});
+const Main: React.FC<MainProps> = ({ user }) => {
   const location = useLocation();
   const { response } = location.state || {};
-  const classNames = response.classNames
-    .split(",")
-    .map((className: string) => className.trim().split(".").pop());
-  const extDependencies = response.externalDependencyList.map(
+  const classNames = response?.classNames
+    ?.split(",")
+    .map((className: string) => className.trim().split(".").pop()) || [];
+  const extDependencies = response.externalDependencyList?.map(
     (externalDependency: MavenDependency) => externalDependency.artifactId
-  );
-  const [alignment, setAlignment] = useState<String>("internal");
-
+  ) || [];
+  const [alignment, setAlignment] = useState<string>("internal");
   const [selectedClass, setSelectedClass] = useState<InternalDependency | null>(
     null
   ); // New state for selected class
-  const [selectedFilter, setSelectedFilter] = useState<string>(''); // state for new filter
+  const [selectedFilter, setSelectedFilter] = useState<string>(""); // state for new filter
   const handleChange = (
-    event: React.MouseEvent<HTMLElement>,
     newAlignment: string | null
   ) => {
     if (newAlignment !== null) {
@@ -76,7 +88,7 @@ function Main() {
     }
   };
   const handleClassSelect = (className: string) => {
-    const selected = response.internalDependencyList.find(
+    const selected = response?.internalDependencyList?.find(
       (userClass: InternalDependency) =>
         userClass.name.split(".").pop() === className
     );
@@ -85,49 +97,76 @@ function Main() {
   const handleFilterChange = (filter: string) => {
     setSelectedFilter(filter); // updating selected filter state
   };
-
+  const [sidebarOpen, setSidebarOpen] = useState(true) 
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const openInNewTab = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
   return (
-    <Grid2 container spacing={2} sx={{ height: "100vh" }}>
-      <Grid2 size={2}>
-        <Box
-          sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            padding: "20px",
-          }}
-        >
-          <Sidebar
-            classNames={classNames}
-            handleChange={handleChange}
+    <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <AppBar position="static" color="default" elevation={1}>
+        <Toolbar>
+          {isMobile && (
+            <IconButton edge="start" color="inherit" aria-label="menu" onClick={toggleSidebar} sx={{ mr: 2 }}>
+              <MenuIcon />
+            </IconButton>
+          )}
+          <Typography variant="h4" component="div" sx={{ flexGrow: 1 }}>
+            Software Visualizer
+          </Typography>
+          <Button 
+            color="primary" 
+            variant="contained"
+            startIcon={<CloudUpload />}
+            onClick={() => openInNewTab('/upload')}
+            sx={{ mr: 2 }}
+          >
+            Upload File
+          </Button>
+          <Button 
+            color="primary" 
+            variant="contained"
+            startIcon={<FolderOpen />}
+            onClick={() => openInNewTab('/projects')}
+            sx={{ mr: 2 }}
+          >
+            Saved Projects
+          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Avatar src={user.photoURL || undefined} sx={{ mr: 2 }}>
+              {user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+            </Avatar>
+            <Typography variant="subtitle2" sx={{ mr: 1 }}>{user.displayName || user.email}</Typography>
+          </Box>
+        </Toolbar>
+      </AppBar>
+      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+        <Sidebar
+          user={user}
+          classNames={classNames}
+          extDependencies={extDependencies}
+          alignment={alignment}
+          onAlignmentChange={handleChange}
+          onSelectClass={handleClassSelect}
+          open={sidebarOpen}
+          onClose={toggleSidebar}
+          isMobile={isMobile}
+        />
+        <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'auto' }}>
+          <GraphWhiteBoard
+            jsonData={response}
             alignment={alignment}
-            extDependencies={extDependencies}
-            onSelectClass={handleClassSelect}
+            selectedClass={selectedClass}
           />
         </Box>
-      </Grid2>
-
-      {/* Vertical Divider */}
-      <Divider orientation="vertical" flexItem sx={{ borderColor: "black" }} />
-
-      {/* Right part */}
-      <Grid2 size={9}>
-        <Box
-          sx={{
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '20px 0px 20px 20px',
-            boxSizing: 'border-box',
-          }}
-        >
-    
-          <GraphWhiteBoard  jsonData={response} alignment={alignment} selectedClass={selectedClass} />
-        </Box>
-      </Grid2>
-    </Grid2>
+      </Box>
+    </Box>
+  </ThemeProvider>
   );
-}
-
+};
 export default Main;
