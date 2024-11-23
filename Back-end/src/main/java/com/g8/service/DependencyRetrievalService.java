@@ -47,7 +47,7 @@ public class DependencyRetrievalService {
                 return CompletableFuture.completedFuture(jsonOutput);
             }
 
-            return null;
+            return CompletableFuture.completedFuture(null);
 
         }  catch (Exception e) {
             throw new RuntimeException("Error retrieving internal dependencies: " + e.getMessage());
@@ -67,7 +67,7 @@ public class DependencyRetrievalService {
             if (classList != null && !classList.isEmpty()) {
                 return CompletableFuture.completedFuture(gson.toJson(classList));
             }
-            return null;
+            return CompletableFuture.completedFuture(null);
 
         }  catch (Exception e) {
             throw new RuntimeException("Error retrieving classList: " + e.getMessage());
@@ -93,7 +93,7 @@ public class DependencyRetrievalService {
                 return CompletableFuture.completedFuture(gson.toJson(dependencies));
             }
 
-            return null;
+            return CompletableFuture.completedFuture(null);
 
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving external dependencies: " + e.getMessage());
