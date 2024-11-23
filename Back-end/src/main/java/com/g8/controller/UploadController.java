@@ -58,6 +58,12 @@ public class UploadController {
         if (!authService.verifyToken(idToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
         }
+
+        if(projectId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Project ID is empty. Cannot retrieve the internal dependency.");
+        }
+
         try {
             // Retrieve internal dependencies after successful authorization
             CompletableFuture<String> response = dependencyRetrievalService.getInternalDependencies(projectId);
@@ -75,6 +81,12 @@ public class UploadController {
         if (!authService.verifyToken(idToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
         }
+
+        if(projectId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Project ID is empty. Cannot retrieve the external dependency.");
+        }
+
         try {
             // Retrieve external dependencies after successful authorization
             CompletableFuture<String> response = dependencyRetrievalService.getExternalDependencies(projectId);
@@ -92,6 +104,12 @@ public class UploadController {
         if (!authService.verifyToken(idToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
         }
+
+        if(projectId.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Project ID is empty. Cannot retrieve the list.");
+        }
+
         try {
             // Retrieve external dependencies after successful authorization
             CompletableFuture<String> response = dependencyRetrievalService.getClassList(projectId);
