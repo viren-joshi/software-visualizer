@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -83,7 +84,6 @@ public class DependencyRetrievalServiceTest {
 
             CompletableFuture<String> result = dependencyRetrievalService.getInternalDependencies("testProject");
             result.join();
-
 
             Type type = new TypeToken<List<ClassInfo>>() {}.getType();
             List<ClassInfo> expectedList = gson.fromJson(gson.toJson(intDepData), type);
@@ -156,4 +156,119 @@ public class DependencyRetrievalServiceTest {
             verify(mockDocumentReference, times(1)).set(any());
         }
     }
+
+    @Test
+    void testGetInternalDependenciesWithNullData() throws Exception {
+        when(mockDocumentSnapshot.get("intDep")).thenReturn(null);
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            CompletableFuture<String> result = dependencyRetrievalService.getInternalDependencies("testProject");
+            result.join();
+
+            assertEquals(null, result.get());
+        }
+    }
+
+    @Test
+    void testGetInternalDependenciesWithEmptyData() throws Exception {
+        when(mockDocumentSnapshot.get("intDep")).thenReturn(List.of());
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            CompletableFuture<String> result = dependencyRetrievalService.getInternalDependencies("testProject");
+            result.join();
+
+            assertEquals(null, result.get());
+        }
+    }
+
+    @Test
+    void testGetClassListWithNullData() throws Exception {
+        when(mockDocumentSnapshot.get("classList")).thenReturn(null);
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            CompletableFuture<String> result = dependencyRetrievalService.getClassList("testProject");
+            result.join();
+
+            assertEquals(null, result.get());
+        }
+    }
+
+    @Test
+    void testGetClassListWithEmptyData() throws Exception {
+        when(mockDocumentSnapshot.get("classList")).thenReturn(List.of());
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            CompletableFuture<String> result = dependencyRetrievalService.getClassList("testProject");
+            result.join();
+
+            assertEquals(null, result.get());
+        }
+    }
+
+    @Test
+    void testGetExternalDependenciesWithNullData() throws Exception {
+        when(mockDocumentSnapshot.get("extDep")).thenReturn(null);
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            CompletableFuture<String> result = dependencyRetrievalService.getExternalDependencies("testProject");
+            result.join();
+
+            assertEquals(null, result.get());
+        }
+    }
+
+    @Test
+    void testGetExternalDependenciesWithEmptyData() throws Exception {
+        when(mockDocumentSnapshot.get("extDep")).thenReturn(List.of());
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            CompletableFuture<String> result = dependencyRetrievalService.getExternalDependencies("testProject");
+            result.join();
+
+            assertEquals(null, result.get());
+        }
+    }
+
+    @Test
+    void testGetInternalDependenciesThrowsException() {
+        when(mockDocumentReference.get()).thenThrow(new RuntimeException("Firestore error"));
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            assertThrows(RuntimeException.class, () -> {
+                dependencyRetrievalService.getInternalDependencies("testProject").join();
+            });
+        }
+    }
+
+    @Test
+    void testSaveDataThrowsException() throws ExecutionException, InterruptedException {
+        when(mockDocumentReference.set(any())).thenThrow(new RuntimeException("Firestore write error"));
+
+        List<Map<String, Object>> internalDependencies = List.of();
+        List<Map<String, String>> externalDependencies = List.of();
+        List<String> classList = List.of();
+
+        try (MockedStatic<FirestoreClient> firestoreClientMock = mockStatic(FirestoreClient.class)) {
+            firestoreClientMock.when(FirestoreClient::getFirestore).thenReturn(mockFirestore);
+
+            assertThrows(RuntimeException.class, () -> {
+                dependencyRetrievalService.saveData(internalDependencies, externalDependencies, classList).join();
+            });
+        }
+    }
+
 }
