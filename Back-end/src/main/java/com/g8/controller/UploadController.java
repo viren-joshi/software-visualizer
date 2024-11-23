@@ -98,7 +98,7 @@ public class UploadController {
             response.join();
             return ResponseEntity.ok(response.get());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve external dependencies");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to retrieve the class list");
         }
     }
 }

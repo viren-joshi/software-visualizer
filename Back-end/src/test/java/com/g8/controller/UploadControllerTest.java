@@ -149,14 +149,139 @@ public class UploadControllerTest {
                 .andExpect(content().json("{\"externalDeps\": []}"));
     }
 
-    private void testAssertNonEmptyJson(String endpoint) throws Exception {
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + endpoint);
-        builder.header("Authorization", authorizationToken);
-        builder.header("project_id", projectId);
-        builder.contentType(MediaType.MULTIPART_FORM_DATA);
+    // yahan se
 
-        mockMvc.perform(builder)
-                .andExpect(status().isOk())
-                .andExpect(content().json("{\"internalDeps\": []}"));
+    @Test
+    public void testUnauthorizedAccessForUpload() throws Exception {
+        MockMultipartFile validFile = new MockMultipartFile("file", "project.jar", "application/java-archive", "some-content".getBytes());
+
+        Mockito.when(authService.verifyToken(any())).thenReturn(false);
+
+        mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
+                        .file(validFile)
+                        .param("classContainer", "com.example")
+                        .header("Authorization", "invalid-token")
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Unauthorized API access"));
     }
+
+    @Test
+    public void testUnauthorizedAccessForInternalDependencies() throws Exception {
+        Mockito.when(authService.verifyToken(any())).thenReturn(false);
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
+                        .header("Authorization", "invalid-token")
+                        .header("project_id", projectId))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Unauthorized API access"));
+    }
+
+    @Test
+    public void testUploadProjectWithEmptyFile() throws Exception {
+        MockMultipartFile emptyFile = new MockMultipartFile("file", "project.jar", "application/java-archive", new byte[0]);
+
+        mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
+                        .file(emptyFile)
+                        .param("classContainer", "com.example")
+                        .header("Authorization", authorizationToken)
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("File is empty. Please upload a valid file."));
+    }
+
+    @Test
+    public void testUploadProjectWithMissingClassContainer() throws Exception {
+        MockMultipartFile validFile = new MockMultipartFile("file", "project.jar", "application/java-archive", "some-content".getBytes());
+
+        mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
+                        .file(validFile)
+                        .header("Authorization", authorizationToken)
+                        .param("classContainer", "")
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Class container is required."));
+    }
+
+    @Test
+    public void testInternalDependenciesWithException() throws Exception {
+        Mockito.when(dependencyRetrievalService.getInternalDependencies(any()))
+                .thenThrow(new RuntimeException("Unexpected error"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
+                        .header("Authorization", authorizationToken)
+                        .header("project_id", projectId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Failed to retrieve internal dependencies"));
+    }
+
+    @Test
+    public void testExternalDependenciesWithException() throws Exception {
+        Mockito.when(dependencyRetrievalService.getExternalDependencies(any()))
+                .thenThrow(new RuntimeException("Unexpected error"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
+                        .header("Authorization", authorizationToken)
+                        .header("project_id", projectId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Failed to retrieve external dependencies"));
+    }
+
+    @Test
+    public void testClassListWithException() throws Exception {
+        Mockito.when(dependencyRetrievalService.getClassList(any()))
+                .thenThrow(new RuntimeException("Unexpected error"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
+                        .header("Authorization", authorizationToken)
+                        .header("project_id", projectId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Failed to retrieve the class list"));
+    }
+
+    @Test
+    public void testGetInternalDependenciesWithMissingProjectId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
+                        .header("Authorization", authorizationToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testGetExternalDependenciesWithMissingProjectId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
+                        .header("Authorization", authorizationToken))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testGetInternalDependenciesWithEmptyProjectId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
+                        .header("Authorization", authorizationToken)
+                        .header("project_id", ""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testGetExternalDependenciesWithEmptyProjectId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
+                        .header("Authorization", authorizationToken)
+                        .header("project_id", ""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testGetClassListWithEmptyProjectId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
+                        .header("Authorization", authorizationToken)
+                        .header("project_id", ""))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testGetClassListWithMissingProjectId() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
+                        .header("Authorization", authorizationToken))
+                .andExpect(status().isBadRequest());
+    }
+
 }

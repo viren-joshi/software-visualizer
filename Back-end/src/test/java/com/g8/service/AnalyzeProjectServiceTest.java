@@ -124,11 +124,10 @@ public class AnalyzeProjectServiceTest {
         analyzeProjectService.setUSER_PACKAGE_PREFIX("org/example");
         TEST_JAR_FILE_PATH = "src/test/resources/empty-1.0-SNAPSHOT.jar";
 
-        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class);
-             MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
+        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class)) {
 
             firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any(), any()))
+            when(dependencyRetrievalService.saveData(any(), any(), any()))
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeFile(TEST_JAR_FILE_PATH));
@@ -146,11 +145,10 @@ public class AnalyzeProjectServiceTest {
         MockMultipartFile mmf = new MockMultipartFile(file.getName(), file.getName(), "application/java-archive", fileInputStream);
 
         // Verify that saveFile and analyzeFile were called
-        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class);
-             MockedStatic<DependencyRetrievalService> mockedStatic = mockStatic(DependencyRetrievalService.class)) {
+        try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class)) {
             // Define the behavior of saveData
             firestoreClient.when(FirestoreClient::getFirestore).thenReturn(mock(Firestore.class));
-            mockedStatic.when(() -> dependencyRetrievalService.saveData(any(), any(), any()))
+            when(dependencyRetrievalService.saveData(any(), any(), any()))
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
