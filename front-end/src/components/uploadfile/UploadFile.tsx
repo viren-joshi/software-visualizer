@@ -13,10 +13,11 @@ import { Box,
   Avatar,
 } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import styled from "@emotion/styled";
 import { User } from "firebase/auth";
 import { getAuth, signOut } from "firebase/auth";
@@ -99,7 +100,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
         throw new Error('Upload failed');
       }
 
-      const internapDependencies = await axios.get(`${server_url}/initialize/intDep`, {
+      const internalDependencies = await axios.get(`${server_url}/initialize/intDep`, {
         headers: {
           'Authorization': token,
           'Content-Type': 'multipart/form-data',
@@ -123,7 +124,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
       console.log('Upload successful:', uploadResponse.data);
 
       const response = {
-        internalDependencyList: internapDependencies.data || [],
+        internalDependencyList: internalDependencies.data || [],
         externalDependencyList: externalDependencies.data || [],
         classNames: classList.data || [],
       };
@@ -159,8 +160,11 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
       <Container maxWidth="md">
         <Card elevation={3}>
           <CardHeader
-            title="Software Visualizer"
-            titleTypographyProps={{ variant: 'h4', align: 'left', gutterBottom: true }}
+            title={
+              <Typography variant="h4" align="left" gutterBottom>
+                Software Visualizer
+              </Typography>
+            }
             action={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Avatar src={user.photoURL || undefined}>{user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}</Avatar>
@@ -234,13 +238,21 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
                 </Button>
               </Grid>
             </Grid>
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Button
                 variant="outlined"
                 onClick={() => setSelectedFile(null)}
                 disabled={!selectedFile}
               >
                 Cancel
+              </Button>
+               <Button
+                component={Link}
+                to="/projects"
+                variant="outlined"
+                startIcon={<FolderOpenIcon />}
+              >
+                Saved Projects
               </Button>
             </Box>
           </CardContent>
