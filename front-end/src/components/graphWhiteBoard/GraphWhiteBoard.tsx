@@ -13,11 +13,16 @@ import { ReactFlow,
     MarkerType,
 
   } from "@xyflow/react";
-
 import '@xyflow/react/dist/style.css';
 import { Container, Box } from '@mui/material';
-import { ClassContainer, InternalDependency } from '../mainpage/Main';
+import { ClassContainer, InternalDependency, MavenDependency } from '../mainpage/Main';
 import Filter from '../filter/Filter';
+import Tree from 'react-d3-tree';
+
+export interface TreeNode {
+  name: string;
+  children?: TreeNode[];
+}
 
 export interface GraphWhiteBoardProps {
   jsonData: ClassContainer;
@@ -239,7 +244,18 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
       })
     );
   }
+  const processTreeData = (dependencies: MavenDependency[]): TreeNode => {
+    const treeData: TreeNode = {
+      name: "Dependencies",
+      children: dependencies.map((dependency) => ({
+        name: dependency.artifactId,
+      })),
+    };
 
+    return treeData;
+  };
+
+  const treeData = processTreeData(jsonData.externalDependencyList);
   return (
     <div>
       {/* graph goes here */}
@@ -370,6 +386,53 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
           <Typography variant="h5" gutterBottom>
             External Dependency Graph
           </Typography>
+          <Container maxWidth={false} style={{ height: "100vh", padding: 0 }}>
+            <Box
+              sx={{
+                bgcolor: "#e8edf1",
+                height: "82vh",
+                width: "100%",
+                maxWidth: "100%",
+                padding: "10px",
+                boxSizing: "border-box", 
+              }}
+            >
+              <Tree
+                data={treeData}
+                orientation="vertical"
+                translate={{
+                  x: window.innerWidth / 2,
+                  y: window.innerHeight / 2,
+                }}
+                pathFunc="diagonal"
+                nodeSize={{ x: 300, y: 200 }}
+                separation={{ siblings: 0.5, nonSiblings: 1.0 }}
+                zoomable // Enables zoom and pan
+                scaleExtent={{ min: 0.5, max: 2 }} // Set zoom levels
+                renderCustomNodeElement={(rd3tProps) => (
+                  <g>
+                    <circle
+                      r={10}
+                      fill="purple"
+                      stroke="black"
+                      strokeWidth={1}
+                    />
+                    <text
+                      dy={
+                        rd3tProps.nodeDatum.name === "Dependencies" ? -15 : 20
+                      }
+                      fontSize={12}
+                      textAnchor="middle"
+                      style={{ fill: "black" }}
+                    >
+                      {rd3tProps.nodeDatum.name}
+                    </text>
+                  </g>
+                )}
+                pathClassFunc={() => "link"}
+              />
+            </Box>
+          </Container>
         </>
       )}
     </div>
