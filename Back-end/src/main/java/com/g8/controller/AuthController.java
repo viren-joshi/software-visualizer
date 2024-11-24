@@ -1,8 +1,6 @@
 package com.g8.controller;
 
 import com.g8.service.AuthService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +16,7 @@ public class AuthController {
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
-    
-    Logger logger = LoggerFactory.getLogger(AuthController.class);
-    
+
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@RequestParam String email, @RequestParam String password, @RequestParam String name) {
         return authService.signUp(email, password, name);   

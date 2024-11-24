@@ -1,10 +1,12 @@
 package com.g8.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
-
+import com.google.firebase.ErrorCode;
+import com.google.firebase.FirebaseException;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
+import com.google.firebase.auth.UserRecord;
+import com.google.firebase.auth.UserRecord.CreateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -13,13 +15,8 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import com.google.firebase.ErrorCode;
-import com.google.firebase.FirebaseException;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.auth.FirebaseToken;
-import com.google.firebase.auth.UserRecord;
-import com.google.firebase.auth.UserRecord.CreateRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class AuthServiceTest {
     @Mock
@@ -48,7 +45,11 @@ class AuthServiceTest {
 
     @Test
     void testSignUpFailure() throws FirebaseAuthException {
-        when(firebaseAuth.createUser(any(CreateRequest.class))).thenThrow(new FirebaseAuthException(new FirebaseException(ErrorCode.UNKNOWN, "Failed", null)));
+
+        FirebaseException firebaseException = new FirebaseException(ErrorCode.UNKNOWN, "Failed", null);
+        FirebaseAuthException firebaseAuthException = new FirebaseAuthException(firebaseException);
+
+        when(firebaseAuth.createUser(any(CreateRequest.class))).thenThrow(firebaseAuthException);
 
         ResponseEntity<String> response = authService.signUp("test@example.com", "password123", "Test User");
         
@@ -69,7 +70,11 @@ class AuthServiceTest {
 
     @Test
     void testVerifyTokenFailure() throws FirebaseAuthException {
-        when(firebaseAuth.verifyIdToken("invalidToken")).thenThrow(new FirebaseAuthException(new FirebaseException(ErrorCode.PERMISSION_DENIED, "Failed", null)));
+
+        FirebaseException firebaseException = new FirebaseException(ErrorCode.PERMISSION_DENIED, "Failed", null);
+        FirebaseAuthException firebaseAuthException = new FirebaseAuthException(firebaseException);
+
+        when(firebaseAuth.verifyIdToken("invalidToken")).thenThrow(firebaseAuthException);
 
         boolean isVerified = authService.verifyToken("invalidToken");
         

@@ -1,9 +1,12 @@
 package com.g8.configuration;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.cloud.FirestoreClient;
+
 import io.github.cdimascio.dotenv.Dotenv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,7 @@ import java.io.IOException;
 
 @Configuration
 public class FirebaseConfig {
+
     private static final Logger logger = LoggerFactory.getLogger(FirebaseConfig.class);
 
     @Bean
@@ -37,5 +41,10 @@ public class FirebaseConfig {
             logger.error("Error reading firebase config file: " + e.getMessage());
         }
         return null;
+    }
+
+    @Bean
+    public Firestore getFirestore() {
+        return FirestoreClient.getFirestore();
     }
 }

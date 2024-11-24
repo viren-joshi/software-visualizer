@@ -8,25 +8,33 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.objectweb.asm.ClassReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 @Service
-public class DependencyHandler {
+public class AnalyzeProjectService {
 
     // Stores the package name that has all the user classes
     private String USER_PACKAGE_PREFIX;
 
     // Collection of information of all the classes
-    private List<ClassInfo> allClassInfoList;
+    private List<Map<String, Object>> internalDependencies;
+
+    private List<Map<String, String>> externalDependencies;
 
     // To retrieve classInfo object by searching for its name
     private Map<String, ClassInfo> classInfoMap;
@@ -34,19 +42,20 @@ public class DependencyHandler {
     // Stores nested class relationship
     private Map<String, List<String>> parentClassToNestedClassesMap;
 
-    // JSON string containing internal dependencies. Used as a response to a user's request
-    private String internalDep;
+    private List<String> classList;
 
-    // JSON string containing external dependencies. Used as a response to a user's request
-    private String externalDep;
+    @Autowired
+    private DependencyRetrievalService dependencyRetrievalService;
 
     private Gson gson;
 
-    public DependencyHandler() {
-        this.allClassInfoList = new ArrayList<>();
+    public AnalyzeProjectService(DependencyRetrievalService dependencyRetrievalService) {
+        this.internalDependencies = new ArrayList<>();
         this.classInfoMap = new HashMap<>();
         this.parentClassToNestedClassesMap = new HashMap<>();
-        internalDep = null;
+        this.externalDependencies = new ArrayList<>();
+        this.classList = new ArrayList<>();
+        this.dependencyRetrievalService = dependencyRetrievalService;
         gson = new Gson();
     }
 
@@ -68,7 +77,7 @@ public class DependencyHandler {
     }
 
     // Extracts internal and external dependencies
-    protected void analyzeFile(String jarFilePath) throws Exception {
+    protected String analyzeFile(String jarFilePath) throws Exception {
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
             jarFile.stream()
@@ -86,7 +95,7 @@ public class DependencyHandler {
                     // POM file has external dependencies
                     if (entry.getName().endsWith("pom.xml")) {
                         try {
-                            externalDep = analyzePomDependencies(entry, jarFile);
+                            analyzePomDependencies(entry, jarFile);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -99,9 +108,12 @@ public class DependencyHandler {
             classInfoMap.get(entry.getKey()).setNestedClassesList(entry.getValue());
         }
 
-        // Convert the entire list of ClassInfo objects to JSON
-        internalDep = gson.toJson(allClassInfoList);
+        // Create a new document in the Firestore collection "projects" with an auto-generated ID
+        CompletableFuture<String> documentId = dependencyRetrievalService.saveData(internalDependencies, externalDependencies, classList);
+        documentId.join();
+        return documentId.get();
     }
+
 
     // Visiting a class and storing the retrieved information in the list
     void processClassEntry(JarFile jarFile, JarEntry entry) throws Exception {
@@ -113,7 +125,11 @@ public class DependencyHandler {
 
             ClassInfo classInfo = visitor.getClassInfo();
             classInfoMap.put(classInfo.getName(), classInfo);
-            allClassInfoList.add(classInfo);
+
+            Map<String, Object> classInfoMap = gson.fromJson(gson.toJson(classInfo), Map.class);
+            internalDependencies.add(classInfoMap);
+            if(!classList.contains(classInfo.getName()))
+                classList.add(classInfo.getName());
         }
     }
 
@@ -138,15 +154,13 @@ public class DependencyHandler {
         saveFile(file, jarFilePath);
 
         // Analyzing the file
-        analyzeFile(jarFilePath);
+        String projectId = analyzeFile(jarFilePath);
 
-        return new ResponseEntity<>("Success", HttpStatus.OK);
+        return new ResponseEntity<>(projectId, HttpStatus.OK);
     }
 
     // Analyzes in external dependencies
-    public String analyzePomDependencies(JarEntry entry, JarFile jar) throws Exception {
-
-        List<Map<String, String>> dependenciesList = new ArrayList<>();
+    public void analyzePomDependencies(JarEntry entry, JarFile jar) throws Exception {
 
         if (entry != null) {
             try (InputStream pomInputStream = jar.getInputStream(entry)) {
@@ -163,28 +177,21 @@ public class DependencyHandler {
                     dependencyMap.put("version", dependency.getVersion() != null ? dependency.getVersion() : "");
                     dependencyMap.put("scope", dependency.getScope() != null ? dependency.getScope() : "");
 
-                    dependenciesList.add(dependencyMap);
+                    externalDependencies.add(dependencyMap);
                 }
             }
         }
-
-        return gson.toJson(dependenciesList);
-    }
-
-    public String getInternalDependencies() {
-        return this.internalDep;
-    }
-
-    public String getClassList() {
-        String data = this.classInfoMap.keySet().toString();
-        return data.substring(1, data.length() - 1);
     }
 
     protected void setUSER_PACKAGE_PREFIX(String val) {
         this.USER_PACKAGE_PREFIX = val;
     }
 
-    public String getExternalDependencies() {
-        return this.externalDep;
+    List<Map<String, Object>> getInternalForTest() {
+        return internalDependencies;
+     }
+
+    List<Map<String, String>> getExternalForTest() {
+        return externalDependencies;
     }
 }

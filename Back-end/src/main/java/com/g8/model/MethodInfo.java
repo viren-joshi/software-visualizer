@@ -1,45 +1,20 @@
 package com.g8.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class MethodInfo {
 
     private String methodName;
     private List<String> annotations = new ArrayList<>();
     private boolean isStatic;
 
-    public MethodInfo() {
-    }
-
-    public MethodInfo(String methodName, List<String> annotations, boolean isStatic) {
-        this.methodName = methodName;
-        this.annotations = annotations;
-        this.isStatic = isStatic;
-    }
-
-    public String getMethodName() {
-        return methodName;
-    }
-
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
-    }
-
-    public boolean isStatic() {
-        return isStatic;
-    }
-
-    public void setStatic(boolean isStatic) {
-        this.isStatic = isStatic;
-    }
-
-    public List<String> getAnnotations() {
-        return annotations;
-    }
-
-    public void setAnnotations(List<String> annotations) {
-        this.annotations = annotations;
-    }
 }
 

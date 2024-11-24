@@ -25,7 +25,6 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
     // Stores the annotations information so that it can be added to the classInfo object once the class has been visited
     private final List<PrintAnnotationVisitor> annotations;
 
-
     public ClassVisitor(Map<String, List<String>> map) {
         super(Opcodes.ASM9);
         fieldInfoList = new ArrayList<>();
@@ -85,7 +84,7 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
                     .computeIfAbsent(parentName, k -> new ArrayList<>())
                     .add(name);
 
-            classInfo.setIsNested(true);
+            classInfo.setNested(true);
         }
     }
 
@@ -143,7 +142,7 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
 
         // Checking if the class is a controller class
         if(ann[ann.length - 1].toLowerCase().contains("controller"))
-            classInfo.setIsControllerClass(true);
+            classInfo.setControllerClass(true);
 
         PrintAnnotationVisitor annotationVisitor = new PrintAnnotationVisitor(annotationName);
         annotations.add(annotationVisitor);
@@ -185,38 +184,38 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
         if(fieldType.startsWith("L"))
             fieldType = fieldType.substring(1);
 
-        String replace = "";
+
+        String replace = extractType(fieldType);
+        // Check if 'replace' is empty
+        boolean isReplaceEmpty = replace.isEmpty();
+
+        // Check if 'fieldType' has more than one character
+        boolean isFieldTypeLong = fieldType.length() > 1;
+
+        // Compute the result based on conditions
+        String resultWhenReplaceNotEmpty = isFieldTypeLong ? replace + fieldType.substring(1) : replace;
+
+        // Final result
+        return isReplaceEmpty ? fieldType : resultWhenReplaceNotEmpty;
+    }
+
+    private String extractType(String fieldType) {
+
+        String replace;
+
         switch (fieldType.charAt(0)) {
-            case 'I' -> {
-                replace = "int";
-            }
-            case 'Z' -> {
-                replace = "boolean";
-            }
-            case 'B' -> {
-                replace = "byte";
-            }
-            case 'C' -> {
-                replace = "char";
-            }
-            case 'D' -> {
-                replace = "double";
-            }
-            case 'F' -> {
-                replace = "float";
-            }
-            case 'J' -> {
-                replace = "long";
-            }
-            case 'S' -> {
-                replace = "short";
-            }
-            case 'V' -> {
-                replace = "void";
-            }
+            case 'I' -> replace = "int";
+            case 'Z' -> replace = "boolean";
+            case 'B' -> replace = "byte";
+            case 'C' -> replace = "char";
+            case 'D' -> replace = "double";
+            case 'F' -> replace = "float";
+            case 'J' -> replace = "long";
+            case 'S' -> replace = "short";
+            default -> replace = "";
         }
 
-        return replace.isEmpty() ? fieldType : fieldType.length() > 1 ? replace + fieldType.substring(1) : replace;
+        return replace;
     }
 
     public List<PrintAnnotationVisitor> getAnnotations() {
