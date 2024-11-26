@@ -54,7 +54,7 @@ public class UploadControllerTest {
 
         ResponseEntity<String> responseEntity = new ResponseEntity<>("Success", HttpStatus.OK);
 
-        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(validFile), eq("com.example")))
+        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(validFile), eq("com.example"), any()))
                 .thenReturn(responseEntity);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(validFile);
@@ -72,7 +72,7 @@ public class UploadControllerTest {
         MockMultipartFile invalidFile = new MockMultipartFile("file", "project.txt", MediaType.TEXT_PLAIN_VALUE, "some-content".getBytes());
         ResponseEntity<String> responseEntity = new ResponseEntity<>("Unsupported file", HttpStatus.BAD_REQUEST);
 
-        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(invalidFile), eq("com.example")))
+        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(invalidFile), eq("com.example"), any()))
                 .thenReturn(responseEntity);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(invalidFile);
@@ -90,7 +90,7 @@ public class UploadControllerTest {
         MockMultipartFile validFile = new MockMultipartFile("file", "project.jar", "application/java-archive", "some-content".getBytes());
         RuntimeException runtimeException = new RuntimeException("Unexpected error");
 
-        Mockito.when(analyzeProjectService.analyzeUploadedProject(any(MockMultipartFile.class), eq("com.example")))
+        Mockito.when(analyzeProjectService.analyzeUploadedProject(any(MockMultipartFile.class), eq("com.example"), any()))
                 .thenThrow(runtimeException);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(validFile);

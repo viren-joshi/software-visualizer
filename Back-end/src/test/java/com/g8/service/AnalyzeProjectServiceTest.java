@@ -44,6 +44,9 @@ public class AnalyzeProjectServiceTest {
 
     @Mock 
     private DependencyRetrievalService dependencyRetrievalService;
+//
+//    @Mock
+//    private
 
     private InputStream pomInputStream;
 
@@ -130,7 +133,10 @@ public class AnalyzeProjectServiceTest {
             when(dependencyRetrievalService.saveData(any(), any(), any()))
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
-            assertDoesNotThrow(() -> analyzeProjectService.analyzeFile(TEST_JAR_FILE_PATH));
+            when(dependencyRetrievalService.saveProjectToUser(any(), any()))
+                    .thenReturn(CompletableFuture.completedFuture(mock(Void.class)));
+
+            assertDoesNotThrow(() -> analyzeProjectService.analyzeFile(TEST_JAR_FILE_PATH, "mock_id"));
         }
     }
 
@@ -142,7 +148,7 @@ public class AnalyzeProjectServiceTest {
         FileInputStream fileInputStream = new FileInputStream(file);
 
         // Creating a MultipartFile from an existing file
-        MockMultipartFile mmf = new MockMultipartFile(file.getName(), file.getName(), "application/java-archive", fileInputStream);
+        MockMultipartFile multipartFile = new MockMultipartFile(file.getName(), file.getName(), "application/java-archive", fileInputStream);
 
         // Verify that saveFile and analyzeFile were called
         try (MockedStatic<FirestoreClient> firestoreClient = mockStatic(FirestoreClient.class)) {
@@ -151,7 +157,10 @@ public class AnalyzeProjectServiceTest {
             when(dependencyRetrievalService.saveData(any(), any(), any()))
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
-            assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(mmf, TEST_CLASS_CONTAINER));
+            when(dependencyRetrievalService.saveProjectToUser(any(), any()))
+                    .thenReturn(CompletableFuture.completedFuture(mock(Void.class)));;
+
+            assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(multipartFile, TEST_CLASS_CONTAINER, "mock_id"));
 
             Files.delete(Paths.get(TEST_JAR_FILE_NAME));
         }
@@ -160,7 +169,7 @@ public class AnalyzeProjectServiceTest {
     @Test
     void testAnalyzeUploadedProject_shouldFail() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", "text/plain", "test data".getBytes());
-        ResponseEntity<String> result = analyzeProjectService.analyzeUploadedProject(file, "com.g8.test");
+        ResponseEntity<String> result = analyzeProjectService.analyzeUploadedProject(file, "com.g8.test", "mock_id");
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
     }
 
@@ -204,4 +213,3 @@ public class AnalyzeProjectServiceTest {
         return new ByteArrayInputStream(pomXml.getBytes(StandardCharsets.UTF_8));
     }
 }
-
