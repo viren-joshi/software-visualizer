@@ -2,15 +2,14 @@ package com.g8.service;
 
 import com.g8.model.ClassInfo;
 import com.g8.model.ExternalDependencyInfo;
-import com.google.cloud.firestore.CollectionReference;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.*;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +20,12 @@ import java.util.concurrent.ExecutionException;
 public class DependencyRetrievalService {
 
     private final CollectionReference collectionReference;
+    private final CollectionReference userProjectsCollection;
     private static final Gson gson = new Gson();
 
     DependencyRetrievalService(Firestore firestore) {
         this.collectionReference = firestore.collection("projects");
+        this.userProjectsCollection = firestore.collection("user_projects");
     }
 
     @Async
@@ -116,4 +117,33 @@ public class DependencyRetrievalService {
         // Retrieve the generated document ID
         return CompletableFuture.completedFuture(documentReference.getId());
     }
+
+    @Async
+    public CompletableFuture<Void> saveProjectToUser(String projectId, String userId) {
+        DocumentReference userDocRef = userProjectsCollection.document(userId);
+        Map<String, Object> projectInfo = new HashMap<>();
+        projectInfo.put("projectId", projectId);
+        projectInfo.put("custom_view", "");
+
+        return CompletableFuture.runAsync(() -> {
+            try {
+                // Get the document snapshot
+                DocumentSnapshot snapshot = userDocRef.get().get();
+    
+                if (snapshot.exists()) {
+                    // Document exists, update the projects array
+                    userDocRef.update("projects", FieldValue.arrayUnion(projectInfo)).get();
+                } else {
+                    // Document does not exist, create a new one
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("projects", Collections.singletonList(projectInfo));
+                    userDocRef.set(userData, SetOptions.merge()).get();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Error saving project to user: " + e.getMessage(), e);
+            }
+        });
+
+    }
+
 }

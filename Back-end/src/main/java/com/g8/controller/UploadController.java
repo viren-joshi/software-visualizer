@@ -35,6 +35,8 @@ public class UploadController {
         if (!authService.verifyToken(idToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
         }
+
+        String userId = authService.getUserId(idToken);
         // Validate input parameters
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -45,7 +47,7 @@ public class UploadController {
                     .body("Class container is required.");
         }
         try {
-            return analyzeProjectService.analyzeUploadedProject(file, classContainer);
+            return analyzeProjectService.analyzeUploadedProject(file, classContainer, userId);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to analyze project");
         }
