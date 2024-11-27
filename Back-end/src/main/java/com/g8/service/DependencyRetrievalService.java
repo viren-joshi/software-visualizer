@@ -146,4 +146,20 @@ public class DependencyRetrievalService {
 
     }
 
+    @Async
+    public CompletableFuture<List<Map<String, Object>>> getUserProjects(String userId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                DocumentSnapshot snapshot = userProjectsCollection.document(userId).get().get();
+                if (snapshot.exists()) {
+                    List<Map<String, Object>> projects = (List<Map<String, Object>>) snapshot.get("projects");
+                    return projects != null ? projects : Collections.emptyList();
+                }
+                return Collections.emptyList();
+            } catch (Exception e) {
+                throw new RuntimeException("Error retrieving user projects: " + e.getMessage(), e);
+            }
+        });
+    }
+
 }

@@ -128,7 +128,7 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
 
       const project_id = uploadResponse.data;
 
-      const internapDependencies = await axios.get(`${server_url}/initialize/intDep`, {
+      const internalDependencies = await axios.get(`${server_url}/initialize/intDep`, {
         headers: {
           'Authorization': token,
           'project_id': project_id,

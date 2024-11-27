@@ -54,7 +54,6 @@ public class AuthService {
     public String getUserId(String idToken) {
         try {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
-            logger.info("User " + decodedToken.getUid() + " is authenticated.");
             return decodedToken.getUid();
         } catch (FirebaseAuthException e) {
             logger.error("Error verifying token: " + e.getMessage());
