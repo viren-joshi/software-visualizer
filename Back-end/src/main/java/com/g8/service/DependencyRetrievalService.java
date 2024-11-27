@@ -2,6 +2,7 @@ package com.g8.service;
 
 import com.g8.model.ClassInfo;
 import com.g8.model.ExternalDependencyInfo;
+import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -18,13 +19,15 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class DependencyRetrievalService {
 
-    private final CollectionReference collectionReference;
+    private final CollectionReference projectCollectionReference;
     private final CollectionReference userProjectsCollection;
+    private final CollectionReference customViewsCollection;
     private static final Gson gson = new Gson();
 
     DependencyRetrievalService(Firestore firestore) {
-        this.collectionReference = firestore.collection("projects");
+        this.projectCollectionReference = firestore.collection("projects");
         this.userProjectsCollection = firestore.collection("user_projects");
+        this.customViewsCollection = firestore.collection("custom_views");
     }
 
     @Async
@@ -32,7 +35,7 @@ public class DependencyRetrievalService {
 
         try {
             // Retrieve the collection with the name `projectId`
-            DocumentSnapshot projectCollection = collectionReference.document(projectId).get().get();
+            DocumentSnapshot projectCollection = projectCollectionReference.document(projectId).get().get();
 
             List<Map<String, Object>> projects = (List<Map<String, Object>>) projectCollection.get("intDep");
 
@@ -60,7 +63,7 @@ public class DependencyRetrievalService {
         try {
 
             // Retrieve the collection with the name `projectId`
-            DocumentSnapshot projectCollection = collectionReference.document(projectId).get().get();
+            DocumentSnapshot projectCollection = projectCollectionReference.document(projectId).get().get();
 
             List<String> classList = (List<String>) projectCollection.get("classList");
 
@@ -79,7 +82,7 @@ public class DependencyRetrievalService {
 
         try {
             // Retrieve the collection with the name `projectId`
-            DocumentSnapshot projectCollection = collectionReference.document(projectId).get().get();
+            DocumentSnapshot projectCollection = projectCollectionReference.document(projectId).get().get();
 
             List<Map<String, Object>> projects = (List<Map<String, Object>>) projectCollection.get("extDep");
 
@@ -104,7 +107,7 @@ public class DependencyRetrievalService {
     public CompletableFuture<String> saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies, List<String> classList) {
 
         try {
-            DocumentReference documentReference = collectionReference.document();
+            DocumentReference documentReference = projectCollectionReference.document();
 
             // Prepare data for both internal and external dependencies
             Map<String, Object> dependenciesData = new HashMap<>();
@@ -162,6 +165,68 @@ public class DependencyRetrievalService {
                 return Collections.emptyList();
             } catch (Exception e) {
                 throw new RuntimeException("Error retrieving user projects: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    @Async
+    public CompletableFuture<String> createCustomView(String userId, String projectId, Map<String, Object> data) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                // Create a new custom view document
+                DocumentReference customViewDocRef = customViewsCollection.document();
+                Map<String, Object> customViewData = new HashMap<>();
+                customViewData.put("data", data);
+
+                customViewDocRef.set(customViewData).get(); // Synchronous set operation to ensure completion
+
+                // Update the user document with the custom view ID
+                DocumentReference userDocRef = userProjectsCollection.document(userId);
+                ApiFuture<DocumentSnapshot> userDocFuture = userDocRef.get();
+                DocumentSnapshot userDocSnapshot = userDocFuture.get();
+
+                if (userDocSnapshot.exists()) {
+                    // Retrieve the list of projects
+                    List<Map<String, Object>> projects = (List<Map<String, Object>>) userDocSnapshot.get("projects");
+                    if (projects != null) {
+                        // Update the custom_view field of the matching project
+                        for (Map<String, Object> project : projects) {
+                            if (projectId.equals(project.get("projectId"))) {
+                                project.put("custom_view", customViewDocRef.getId());
+                                break;
+                            }
+                        }
+
+                        // Update the document with the modified projects array
+                        userDocRef.update("projects", projects).get();
+                    }
+
+                    // Return the ID of the created custom view
+                    return customViewDocRef.getId();
+                } else {
+                    System.out.println("User document does not exist");
+                    return "";
+                }
+            } catch (Exception e) {
+                System.out.println("Error creating custom view: " + e.getMessage());
+                return "";
+            }
+        });
+    }
+
+    @Async
+    public CompletableFuture<Map<String,Object>> getCustomViewData(String customViewId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                DocumentSnapshot snapshot = customViewsCollection.document(customViewId).get().get();
+                if (snapshot.exists()) {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("data", snapshot.getData());
+                    return result;
+                }
+                return Collections.emptyMap();
+            } catch (Exception e) {
+                throw new RuntimeException("Error retrieving custom view: " + e.getMessage(), e);
             }
         });
     }
