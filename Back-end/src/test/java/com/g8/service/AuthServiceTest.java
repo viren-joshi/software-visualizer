@@ -12,13 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AuthServiceTest {
+
     @Mock
     private FirebaseAuth firebaseAuth;
 
@@ -37,10 +36,9 @@ class AuthServiceTest {
         when(mockUserRecord.getUid()).thenReturn("testUid");
         when(firebaseAuth.createUser(any(CreateRequest.class))).thenReturn(mockUserRecord);
 
-        ResponseEntity<String> response = authService.signUp("test@example.com", "password123", "Test User");
+        String response = authService.signUp("test@example.com", "password123", "Test User");
         
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertTrue(response.getBody().contains("testUid"));
+        assertTrue(response.contains("testUid"));
     }
 
     @Test
@@ -51,10 +49,7 @@ class AuthServiceTest {
 
         when(firebaseAuth.createUser(any(CreateRequest.class))).thenThrow(firebaseAuthException);
 
-        ResponseEntity<String> response = authService.signUp("test@example.com", "password123", "Test User");
-        
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertTrue(response.getBody().contains("Error creating user"));
+        assertThrows(RuntimeException.class, () -> authService.signUp("test@example.com", "password123", "Test User"));
     }
 
     @Test
@@ -76,8 +71,6 @@ class AuthServiceTest {
 
         when(firebaseAuth.verifyIdToken("invalidToken")).thenThrow(firebaseAuthException);
 
-        boolean isVerified = authService.verifyToken("invalidToken");
-        
-        assertFalse(isVerified);
+        assertThrows(RuntimeException.class, () -> authService.verifyToken("invalidToken"));
     }
 }

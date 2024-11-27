@@ -44,18 +44,18 @@ public class MethodAnnotationVisitorTest {
         assertAnnotationRefactor(methodInfo, "@com.example.AnotherAnnotation(description = testAnnotation)");
     }
 
-    // Method to create a MethodInfo instance
+    // Creates a MethodInfo instance
     private MethodInfo createMethodInfo(String methodName, boolean isStatic) {
         return new MethodInfo(methodName, new ArrayList<>(), isStatic);
     }
 
-    // Method to assert that the method contains the expected annotation
+    // Tests the total number of annotations
     private void assertAnnotationSize(MethodInfo methodInfo) {
         List<String> annotations = methodInfo.getAnnotations();
         assertFalse(annotations.isEmpty());
     }
 
-    // Method to assert that the resulting annotation is same as the expected one
+    // Tests the name of the annotation
     private void assertAnnotationRefactor(MethodInfo methodInfo, String expectedAnnotation) {
         List<String> annotations = methodInfo.getAnnotations();
         assertEquals(expectedAnnotation, annotations.get(0));

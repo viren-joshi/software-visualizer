@@ -8,7 +8,6 @@ import com.google.firebase.auth.UserRecord.CreateRequest;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -24,40 +23,41 @@ public class AuthService {
         this.firebaseAuth = firebaseAuth;
     }
 
-    public ResponseEntity<String> signUp(String email, String password, String name) {
+    public String signUp(String email, String password, String name) throws RuntimeException {
+
        CreateRequest createRequest = new CreateRequest().setEmail(email).setDisplayName(name).setPassword(password);
         try {
             UserRecord userRecord = firebaseAuth.createUser(createRequest);
             logger.info("Successfully created new user: " + userRecord.getUid());
             Map<String, String> response = new HashMap<>();
             response.put("uid", userRecord.getUid());
-            return ResponseEntity.ok(gson.toJson(response));    
-        
+            return gson.toJson(response);
+
         } catch (FirebaseAuthException e) {
             logger.error("Error creating user: " + e.getMessage());
-            return ResponseEntity.status(500).body("Error creating user: " + e.getMessage());
+            throw new RuntimeException("Error while saving user in firestore");
         }
     }
 
-
-    public boolean verifyToken(String idToken) {
+    public boolean verifyToken(String idToken) throws RuntimeException {
         try {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
             logger.info("User " + decodedToken.getUid() + " is authenticated.");
             return true;
         } catch (FirebaseAuthException e) {
             logger.error("Error verifying token: " + e.getMessage());
-            return false;
+            throw new RuntimeException("Error while verifying the user token!");
         }
     }
 
-    public String getUserId(String idToken) {
+    public String getUserId(String idToken) throws RuntimeException {
+
         try {
             FirebaseToken decodedToken = firebaseAuth.verifyIdToken(idToken);
             return decodedToken.getUid();
         } catch (FirebaseAuthException e) {
             logger.error("Error verifying token: " + e.getMessage());
-            return null;
+            throw new RuntimeException("Error while retrieving user Id for verification");
         }
     }
 }

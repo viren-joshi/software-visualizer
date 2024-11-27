@@ -84,7 +84,8 @@ public class AnalyzeProjectService {
                 .forEach(entry -> {
 
                     // Filtering valid user defined classes to extract their dependencies
-                    if (entry.getName().endsWith(".class") && entry.getName().contains(USER_PACKAGE_PREFIX)) {
+                    boolean isValidEntry = entry.getName().contains(USER_PACKAGE_PREFIX) && !entry.getName().matches(".*\\$[0-9]+\\.class$");
+                    if (entry.getName().endsWith(".class") && isValidEntry) {
                         try {
                             processClassEntry(jarFile, entry);
                         } catch (Exception e) {
@@ -107,7 +108,7 @@ public class AnalyzeProjectService {
         for(Map.Entry<String, List<String>> entry : parentClassToNestedClassesMap.entrySet()) {
             classInfoMap.get(entry.getKey()).setNestedClassesList(entry.getValue());
         }
-
+        
         // Create a new document in the Firestore collection "projects" with an auto-generated ID
         CompletableFuture<String> documentId = dependencyRetrievalService.saveData(internalDependencies, externalDependencies, classList);
         documentId.join();
@@ -138,6 +139,11 @@ public class AnalyzeProjectService {
     // Gives response to a user's request
     public ResponseEntity<String> analyzeUploadedProject(MultipartFile file, String classContainer, String userId) throws Exception {
 
+        // clears previous project results
+        internalDependencies.clear();
+        externalDependencies.clear();
+        classList.clear();
+
         USER_PACKAGE_PREFIX = classContainer.replace(".", "/");
 
         if (!file.getOriginalFilename().endsWith(".jar")) {
@@ -158,7 +164,29 @@ public class AnalyzeProjectService {
         // Analyzing the file
         String projectId = analyzeFile(jarFilePath,userId);
 
+        boolean isFileDeleted = deleteFile();
+        if(isFileDeleted) {
+            System.out.println("File deleted!");
+        } else {
+            System.out.println("Error while deleting the user file.");
+        }
+
         return new ResponseEntity<>(projectId, HttpStatus.OK);
+    }
+
+    private boolean deleteFile() {
+
+        if(FileProps.getFilePath() != null) {
+            try {
+                File file = new File(FileProps.getFilePath());
+                if (file.exists()) {
+                    return file.delete();
+                }
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Analyzes in external dependencies

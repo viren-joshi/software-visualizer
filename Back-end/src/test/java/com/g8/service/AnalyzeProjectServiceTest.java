@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -44,9 +43,6 @@ public class AnalyzeProjectServiceTest {
 
     @Mock 
     private DependencyRetrievalService dependencyRetrievalService;
-//
-//    @Mock
-//    private
 
     private InputStream pomInputStream;
 
@@ -158,11 +154,9 @@ public class AnalyzeProjectServiceTest {
                     .thenReturn(CompletableFuture.completedFuture("mocked response"));
 
             when(dependencyRetrievalService.saveProjectToUser(any(), any()))
-                    .thenReturn(CompletableFuture.completedFuture(mock(Void.class)));;
+                    .thenReturn(CompletableFuture.completedFuture(mock(Void.class)));
 
             assertDoesNotThrow(() -> analyzeProjectService.analyzeUploadedProject(multipartFile, TEST_CLASS_CONTAINER, "mock_id"));
-
-            Files.delete(Paths.get(TEST_JAR_FILE_NAME));
         }
     }
 

@@ -14,7 +14,7 @@ public class FieldInfo {
 
     private String identifier;
     private String datatype;
-    private List<String> annotationList = new ArrayList<>();  // To store annotations
+    private List<String> annotationList = new ArrayList<>();
     private boolean isStatic;
     private boolean isAnnotated;
 

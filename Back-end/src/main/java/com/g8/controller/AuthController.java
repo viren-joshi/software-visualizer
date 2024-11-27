@@ -19,7 +19,12 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@RequestParam String email, @RequestParam String password, @RequestParam String name) {
-        return authService.signUp(email, password, name);   
+        try {
+            String response = authService.signUp(email, password, name);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
     }
 
     @PostMapping("/verifyToken")

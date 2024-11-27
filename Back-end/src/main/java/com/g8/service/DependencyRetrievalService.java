@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @Service
 public class DependencyRetrievalService {
@@ -51,7 +50,7 @@ public class DependencyRetrievalService {
             return CompletableFuture.completedFuture(null);
 
         }  catch (Exception e) {
-            throw new RuntimeException("Error retrieving internal dependencies: " + e.getMessage());
+            throw new RuntimeException("Error retrieving internal dependencies");
         }
     }
     
@@ -71,7 +70,7 @@ public class DependencyRetrievalService {
             return CompletableFuture.completedFuture(null);
 
         }  catch (Exception e) {
-            throw new RuntimeException("Error retrieving classList: " + e.getMessage());
+            throw new RuntimeException("Error retrieving classList");
         }
     }
 
@@ -97,25 +96,30 @@ public class DependencyRetrievalService {
             return CompletableFuture.completedFuture(null);
 
         } catch (Exception e) {
-            throw new RuntimeException("Error retrieving external dependencies: " + e.getMessage());
+            throw new RuntimeException("Error retrieving external dependencies");
         }
     }
 
     @Async
-    public CompletableFuture<String> saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies, List<String> classList) throws ExecutionException, InterruptedException {
-        DocumentReference documentReference = collectionReference.document();
+    public CompletableFuture<String> saveData(List<Map<String, Object>> internalDependencies, List<Map<String, String>> externalDependencies, List<String> classList) {
 
-        // Prepare data for both internal and external dependencies
-        Map<String, Object> dependenciesData = new HashMap<>();
-        dependenciesData.put("intDep", internalDependencies);
-        dependenciesData.put("extDep", externalDependencies);
-        dependenciesData.put("classList", classList);
+        try {
+            DocumentReference documentReference = collectionReference.document();
 
-        // Save the data into the Firestore document
-        documentReference.set(dependenciesData).get();
+            // Prepare data for both internal and external dependencies
+            Map<String, Object> dependenciesData = new HashMap<>();
+            dependenciesData.put("intDep", internalDependencies);
+            dependenciesData.put("extDep", externalDependencies);
+            dependenciesData.put("classList", classList);
 
-        // Retrieve the generated document ID
-        return CompletableFuture.completedFuture(documentReference.getId());
+            // Save the data into the Firestore document
+            documentReference.set(dependenciesData).get();
+
+            // Retrieve the generated document ID
+            return CompletableFuture.completedFuture(documentReference.getId());
+        } catch (Exception e) {
+            throw new RuntimeException("Error while saving the project data in firestore");
+        }
     }
 
     @Async
@@ -140,7 +144,7 @@ public class DependencyRetrievalService {
                     userDocRef.set(userData, SetOptions.merge()).get();
                 }
             } catch (Exception e) {
-                throw new RuntimeException("Error saving project to user: " + e.getMessage(), e);
+                throw new RuntimeException("Error while saving project to user");
             }
         });
 

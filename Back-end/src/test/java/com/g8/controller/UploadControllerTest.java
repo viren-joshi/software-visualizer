@@ -4,7 +4,6 @@ import com.g8.service.AnalyzeProjectService;
 import com.g8.service.AuthService;
 import com.g8.service.DependencyRetrievalService;
 import com.google.gson.Gson;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -103,8 +102,7 @@ public class UploadControllerTest {
         builder.contentType(MediaType.MULTIPART_FORM_DATA);
 
         mockMvc.perform(builder)
-                .andExpect(status().is5xxServerError())
-                .andExpect(content().string("Failed to analyze project"));
+                .andExpect(status().is5xxServerError());
     }
 
     @Test
@@ -152,8 +150,6 @@ public class UploadControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json("{\"externalDeps\": []}"));
     }
-
-    // yahan se
 
     @Test
     public void testUnauthorizedAccessForUpload() throws Exception {
@@ -210,37 +206,38 @@ public class UploadControllerTest {
     @Test
     public void testInternalDependenciesWithException() throws Exception {
         Mockito.when(dependencyRetrievalService.getInternalDependencies(any()))
-                .thenThrow(new RuntimeException("Unexpected error"));
+                .thenThrow(new RuntimeException("Mock error"));
 
         mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
                         .header("Authorization", authorizationToken)
                         .header("project_id", projectId))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Failed to retrieve internal dependencies"));
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
     public void testExternalDependenciesWithException() throws Exception {
         Mockito.when(dependencyRetrievalService.getExternalDependencies(any()))
-                .thenThrow(new RuntimeException("Unexpected error"));
+                .thenThrow(new RuntimeException("mock error"));
 
         mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
                         .header("Authorization", authorizationToken)
                         .header("project_id", projectId))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Failed to retrieve external dependencies"));
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
     public void testClassListWithException() throws Exception {
+
+        String mockResponseBody = "Failed to retrieve the class list";
+
         Mockito.when(dependencyRetrievalService.getClassList(any()))
-                .thenThrow(new RuntimeException("Unexpected error"));
+                .thenThrow(new RuntimeException(mockResponseBody));
 
         mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
                         .header("Authorization", authorizationToken)
                         .header("project_id", projectId))
                 .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Failed to retrieve the class list"));
+                .andExpect(content().string(mockResponseBody));
     }
 
     @Test
