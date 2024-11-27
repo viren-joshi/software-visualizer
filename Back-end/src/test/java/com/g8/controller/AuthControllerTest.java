@@ -1,8 +1,6 @@
 package com.g8.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-
+import com.g8.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -11,7 +9,8 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import com.g8.service.AuthService;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 class AuthControllerTest {
 
@@ -30,23 +29,22 @@ class AuthControllerTest {
     @Test
     void testSignUpSuccess() {
         ResponseEntity<String> mockResponse = ResponseEntity.ok("{uid: 'testUid'}");
-        when(authService.signUp("test@example.com", "password123", "Test User")).thenReturn(mockResponse);
+
+        when(authService.signUp("test@example.com", "password123", "Test User")).thenReturn(mockResponse.getBody());
 
         ResponseEntity<String> response = authController.signUp("test@example.com", "password123", "Test User");
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("{uid: 'testUid'}", response.getBody());
+        assertEquals(mockResponse, response);
     }
 
     @Test
-    void testSignUpFailure() {
-        ResponseEntity<String> mockResponse = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating user");
-        when(authService.signUp("test@example.com", "password123", "Test User")).thenReturn(mockResponse);
+    void testSignUpFailure() throws Exception {
+        when(authService.signUp("test@example.com", "password123", "Test User"))
+                .thenThrow(new RuntimeException("mock exception"));
 
         ResponseEntity<String> response = authController.signUp("test@example.com", "password123", "Test User");
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals("Error creating user", response.getBody());
     }
 
     @Test

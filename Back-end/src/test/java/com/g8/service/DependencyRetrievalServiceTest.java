@@ -7,15 +7,11 @@ import com.google.cloud.firestore.*;
 import com.google.common.reflect.TypeToken;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
+
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,11 +22,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 public class DependencyRetrievalServiceTest {
@@ -384,20 +376,20 @@ public class DependencyRetrievalServiceTest {
 
     @Test
     void testGetUserProjects_withExistingUserIdAndNoProjects() throws Exception {
-    // Arrange
-    String userId = "testUser";
-    DocumentSnapshot mockSnapshot = Mockito.mock(DocumentSnapshot.class);
-    Mockito.when(mockSnapshot.exists()).thenReturn(true);
-    Mockito.when(mockSnapshot.get("projects")).thenReturn(null);
- 
-    ApiFuture<DocumentSnapshot> mockApiFuture = Mockito.mock(ApiFuture.class);
-    Mockito.when(mockApiFuture.get()).thenReturn(mockSnapshot);
-    Mockito.when(mockCollectionReference.document(userId).get()).thenReturn(mockApiFuture);
- 
-    // Act
-    CompletableFuture<List<Map<String, Object>>> result = dependencyRetrievalService.getUserProjects(userId);
- 
-    // Assert
-    Assertions.assertEquals(Collections.emptyList(), result.get());
-}
+        // Arrange
+        String userId = "testUser";
+        DocumentSnapshot mockSnapshot = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(mockSnapshot.exists()).thenReturn(true);
+        Mockito.when(mockSnapshot.get("projects")).thenReturn(null);
+
+        ApiFuture<DocumentSnapshot> mockApiFuture = Mockito.mock(ApiFuture.class);
+        Mockito.when(mockApiFuture.get()).thenReturn(mockSnapshot);
+        Mockito.when(mockCollectionReference.document(userId).get()).thenReturn(mockApiFuture);
+
+        // Act
+        CompletableFuture<List<Map<String, Object>>> result = dependencyRetrievalService.getUserProjects(userId);
+
+        // Assert
+        Assertions.assertEquals(Collections.emptyList(), result.get());
+    }
 }
