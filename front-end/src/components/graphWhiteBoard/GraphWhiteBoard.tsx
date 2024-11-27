@@ -1,23 +1,34 @@
-import { List, ListItem, ListItemText, Typography } from '@mui/material'
-import React from 'react'
-import dagre from 'dagre';
-import { useCallback, useEffect } from 'react';
-import { ReactFlow,
-    Background,
-    Edge,
-    Node, 
-    useNodesState,
-    useEdgesState,
-    addEdge, 
-    Connection,
-    MarkerType,
-
-  } from "@xyflow/react";
-import '@xyflow/react/dist/style.css';
-import { Container, Box } from '@mui/material';
-import { ClassContainer, InternalDependency, MavenDependency } from '../mainpage/Main';
-import Filter from '../filter/Filter';
-import Tree from 'react-d3-tree';
+import {
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+} from "@mui/material";
+import React from "react";
+import dagre from "dagre";
+import { useCallback, useEffect } from "react";
+import {
+  ReactFlow,
+  Background,
+  Edge,
+  Node,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  Connection,
+  MarkerType,
+  ConnectionMode,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { Container, Box } from "@mui/material";
+import {
+  ClassContainer,
+  InternalDependency,
+  MavenDependency,
+} from "../mainpage/Main";
+import Filter from "../filter/Filter";
+import Tree from "react-d3-tree";
 
 export interface TreeNode {
   name: string;
@@ -28,7 +39,10 @@ export interface GraphWhiteBoardProps {
   jsonData: ClassContainer;
   alignment: String;
   selectedClass: InternalDependency | null; // New prop for selected class
+  isCustomView?: boolean;
+  setIsCustomView: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export interface NodeData extends Record<string, unknown> {
   label: string;
 }
@@ -48,7 +62,11 @@ const nodeHeight = 36;
 // layouting nodes and edges as per ranking
 const getLayoutedElements = (nodes: any, edges: any) => {
   const isHorizontal = false;
-  dagreGraph.setGraph({ rankdir: isHorizontal ? 'LR' : 'TB', nodesep: 200, ranksep: 150 });
+  dagreGraph.setGraph({
+    rankdir: isHorizontal ? "LR" : "TB",
+    nodesep: 200,
+    ranksep: 150,
+  });
 
   // setNodes parsing in dagre
   nodes.forEach((node: any) => {
@@ -77,20 +95,34 @@ const getLayoutedElements = (nodes: any, edges: any) => {
 const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
   jsonData,
   alignment,
-  selectedClass
+  selectedClass,
+  isCustomView,
+  setIsCustomView,
 }) => {
   const initialNodes: Node[] = [];
   const initialEdges: Edge[] = [];
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
+  const onConnect = useCallback((params: Connection) => {
+    // Prompt the user for a label
+    const label = window.prompt("Enter a label for this edge:", "");
+    // Add the new edge with the label
+    const newEdge = {
+      ...params,
+      label: label || "", // Use the provided label or an empty string if none
+      markerEnd: { type: MarkerType.Arrow },
+    };
+    setEdges((eds) => addEdge(newEdge, eds));
+  }, []);
 
   // setting up nodes list
   useEffect(() => {
+    if (isCustomView) {
+      // setNodes([]);
+      setEdges([]);
+      return;
+    }
     const nodesList: Node[] = [];
     const edgesList: Edge[] = [];
 
@@ -99,7 +131,7 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
       nodesList.push({
         id: classItem.name,
         type: "default",
-        data: { label: classItem.name.split(".").pop()!  },
+        data: { label: classItem.name.split(".").pop()! },
         position: { x: 0, y: 0 }, // temporary position, will be set by dagre layout
       });
 
@@ -111,7 +143,7 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
           target: classItem.inherits,
           label: "inheritance",
           markerEnd: {
-            type: MarkerType.Arrow, 
+            type: MarkerType.Arrow,
           },
         });
       }
@@ -123,15 +155,15 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
           const targetClass = jsonData.internalDependencyList.find(
             (dep) => dep.name === implementation
           );
-        
+
           if (targetClass) {
             edgesList.push({
               id: `e-${classItem.name}-${implementation}`,
               source: classItem.name,
               target: implementation,
-              label: 'implementation',
+              label: "implementation",
               markerEnd: {
-                type: MarkerType.Arrow, 
+                type: MarkerType.Arrow,
               },
             });
           }
@@ -144,13 +176,13 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
         const targetClass = jsonData.internalDependencyList.find(
           (dep) => dep.name === variable.datatype
         );
-    
+
         if (targetClass) {
           edgesList.push({
             id: `e-${classItem.name}-${variable.datatype}`,
             source: classItem.name,
             target: variable.datatype,
-            label: 'composition',
+            label: "composition",
             markerEnd: {
               type: MarkerType.Arrow, // Add arrow marker to indicate dependency direction
             },
@@ -161,24 +193,23 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
     const layoutedElements = getLayoutedElements(nodesList, edgesList);
     setNodes([...layoutedElements.nodes]);
     setEdges([...layoutedElements.edges]);
-  }, [setNodes, setEdges]);
-
+  }, [isCustomView, jsonData, setNodes, setEdges]);
 
   // filter change handler (updating node colors)
   const handleFilterChange = (filter: string) => {
     // user clicks 'none' to remove filters
-    if (filter === 'nofilter') {
+    if (filter === "nofilter") {
       setNodes((nodes) =>
         nodes.map((node) => ({
           ...node,
-          style: { ...node.style, backgroundColor: 'white' }, // Reset to default node color
+          style: { ...node.style, backgroundColor: "white" }, // Reset to default node color
         }))
       );
       setEdges((edges) =>
         edges.map((edge) => ({
           ...edge,
-          style: { stroke: '#888', strokeWidth: 1 }, // Reset edge style
-          markerEnd: { type: MarkerType.Arrow, color: '#888' }, // Reset arrow style
+          style: { stroke: "#888", strokeWidth: 1 }, // Reset edge style
+          markerEnd: { type: MarkerType.Arrow, color: "#888" }, // Reset arrow style
         }))
       );
       return;
@@ -195,18 +226,18 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
     });
 
     // updating the nodes that are involved in the selected dependency
-    setNodes((nodes) => 
+    setNodes((nodes) =>
       nodes.map((node) => {
-        let newColor = '#eee'; //default color
+        let newColor = "#eee"; //default color
 
         // set the color for nodes involved
-        if(filteredNodeIds.has(node.id)) {
-          if(filter == 'inheritance') {
-            newColor = '#5F9EA0';
-          } else if (filter === 'implementation') {
-            newColor = '#E1C16E';
-          } else if (filter === 'composition') {
-            newColor = '#8A9A5B';
+        if (filteredNodeIds.has(node.id)) {
+          if (filter == "inheritance") {
+            newColor = "#5F9EA0";
+          } else if (filter === "implementation") {
+            newColor = "#E1C16E";
+          } else if (filter === "composition") {
+            newColor = "#8A9A5B";
           }
         }
 
@@ -221,20 +252,20 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
     setEdges((edges) =>
       edges.map((edge) => {
         let newEdgeStyle = { stroke: "#ddd", strokeWidth: 1 }; // default edge style for unselected edges
-        let arrowStyle = { type: MarkerType.Arrow, color: '#888' }; // default arrow style
-      
+        let arrowStyle = { type: MarkerType.Arrow, color: "#888" }; // default arrow style
+
         // apply specific styles for edges matching the selected filter
         if (edge.label === filter) {
           if (filter === "inheritance") {
             newEdgeStyle = { stroke: "#5F9EA0", strokeWidth: 2 };
-            arrowStyle = { type: MarkerType.Arrow, color: '#5F9EA0' };
+            arrowStyle = { type: MarkerType.Arrow, color: "#5F9EA0" };
           } else if (filter === "implementation") {
-            newEdgeStyle = { stroke: "#E1C16E", strokeWidth: 2}; 
-            arrowStyle = { type: MarkerType.Arrow, color: '#E1C16E' };
+            newEdgeStyle = { stroke: "#E1C16E", strokeWidth: 2 };
+            arrowStyle = { type: MarkerType.Arrow, color: "#E1C16E" };
           } else if (filter === "composition") {
-            newEdgeStyle = { stroke: "#8A9A5B", strokeWidth: 2 }; 
-            arrowStyle = { type: MarkerType.Arrow, color: '#8A9A5B' };
-          } 
+            newEdgeStyle = { stroke: "#8A9A5B", strokeWidth: 2 };
+            arrowStyle = { type: MarkerType.Arrow, color: "#8A9A5B" };
+          }
         }
         return {
           ...edge,
@@ -243,7 +274,7 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
         };
       })
     );
-  }
+  };
   const processTreeData = (dependencies: MavenDependency[]): TreeNode => {
     const treeData: TreeNode = {
       name: "Dependencies",
@@ -255,6 +286,32 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
     return treeData;
   };
 
+  const toggleCustomView = () => {
+    setIsCustomView(!isCustomView);
+
+    console.log(); // Toggle custom view
+  };
+
+  const saveGraph = () => {
+    const graph = {
+      nodes: nodes.map((node) => ({
+        id: node.id,
+        data: node.data,
+        position: node.position,
+      })),
+      edges: edges.map((edge) => ({
+        id: edge.id.replace(/^xy-edge__/, ""),
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        markerEnd: {
+          type: MarkerType.Arrow,
+        },
+      })),
+    };
+    console.log("Graph data:", graph);
+    // Save graph to a database, file, or localStorage if needed
+  };
   const treeData = processTreeData(jsonData.externalDependencyList);
   return (
     <div>
@@ -324,61 +381,76 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
           </Container>
         ) : (
           <>
-            <Container sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-            }}>
+            <Container
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Typography variant="h5" gutterBottom>
                 Internal Dependency Graph
               </Typography>
               <Typography variant="h5" gutterBottom>
-                {/* put custom views button here */}
+                <Button variant="contained" onClick={toggleCustomView}>
+                  {isCustomView ? "Exit Custom View" : "Custom View"}
+                </Button>
+                {isCustomView && (
+                  <Button
+                    variant="contained"
+                    onClick={saveGraph}
+                    sx={{ marginLeft: "20px" }}
+                  >
+                    Save View
+                  </Button>
+                )}
               </Typography>
             </Container>
             <Typography variant="body1" paragraph>
-            <Container maxWidth='xl'>
-            <Box sx={{ 
-                    bgcolor: '#e8edf1',
-                    height: '82vh',
-                    width: '100%',
-                    maxwidth: '100%',
-                    padding: '10px', 
-                    boxSizing: 'border-box', // keep the padding inside container
-                }}>
-                
-                <ReactFlow 
-                    nodes={nodes} 
+              <Container maxWidth="xl">
+                <Box
+                  sx={{
+                    bgcolor: "#e8edf1",
+                    height: "82vh",
+                    width: "100%",
+                    maxwidth: "100%",
+                    padding: "10px",
+                    boxSizing: "border-box", // keep the padding inside container
+                  }}
+                >
+                  <ReactFlow
+                    nodes={nodes}
                     edges={edges}
                     defaultEdgeOptions={{
                       style: {
-                        stroke: '#888',
+                        stroke: "#888",
                         strokeWidth: 1,
                       },
                       markerEnd: {
-                        type: MarkerType.Arrow, 
-                        color: '#888',
+                        type: MarkerType.Arrow,
+                        color: "#888",
                       },
-                    }} 
+                    }}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
                     fitView
+                    snapToGrid={true}
+                    attributionPosition="top-right"
+                    connectionMode={ConnectionMode.Loose}
+                  ></ReactFlow>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginTop: "10px",
+                  }}
                 >
-                </ReactFlow>
-            </Box>
-            <Box sx={{ 
-                  display: 'flex',
-                  justifyContent: 'flex-end', 
-                  marginTop: '10px'
-                }}
-            >
-              <Filter 
-                onFilterChange={handleFilterChange} 
-              />
-            </Box>
-        </Container>
-          </Typography> 
+                  <Filter onFilterChange={handleFilterChange} />
+                </Box>
+              </Container>
+            </Typography>
           </>
         )
       ) : (
@@ -394,7 +466,7 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
                 width: "100%",
                 maxWidth: "100%",
                 padding: "10px",
-                boxSizing: "border-box", 
+                boxSizing: "border-box",
               }}
             >
               <Tree
