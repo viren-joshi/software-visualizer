@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Box,
   Button,
@@ -10,16 +11,18 @@ import {
   Grid,
   Typography,
   Avatar,
+  CircularProgress,
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { User } from 'firebase/auth';
 import { getAuth, signOut } from 'firebase/auth';
 
+const server_url = process.env.REACT_APP_SERVER_URL;
+
 interface Project {
-  id: string;
-  name: string;
-  createdAt: string;
+  projectId: string;
+  custom_view: string;
 }
 
 interface SavedProjectsProps {
@@ -28,28 +31,32 @@ interface SavedProjectsProps {
 
 const SavedProjects: React.FC<SavedProjectsProps> = ({ user }) => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const auth = getAuth();
 
   useEffect(() => {
-    // TODO: Fetch projects from backend
-    // This is a placeholder. Replace with actual API call.
     const fetchProjects = async () => {
-      // Simulating API call
-      const response = await new Promise<Project[]>((resolve) => 
-        setTimeout(() => resolve([
-          { id: '1', name: 'Project 1', createdAt: '2023-05-01T12:00:00Z' },
-          { id: '2', name: 'Project 2', createdAt: '2023-05-02T14:30:00Z' },
-          { id: '3', name: 'Project 3', createdAt: '2023-05-03T09:15:00Z' },
-          { id: '4', name: 'Project 4', createdAt: '2023-05-04T16:45:00Z' },
-          { id: '5', name: 'Project 5', createdAt: '2023-05-05T10:20:00Z' },
-        ]), 1000)
-      );
-      setProjects(response.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      try {
+        const idToken = await user.getIdToken();
+        const response = await axios.get<Project[]>(`${server_url}/initialize/userProjects`, {
+          headers: {
+            'Authorization': idToken,
+          },
+        });
+
+        if (response.status === 200) {
+          setProjects(response.data);
+        } else {
+          console.error('Failed to fetch projects');
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
     };
 
     fetchProjects();
-  }, []);
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -63,6 +70,46 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({ user }) => {
 
   const handleUploadFile = () => {
     navigate('/upload');
+  };
+
+  const handleOpenProject = async (projectId: string) => {
+    setLoading(true);
+    try {
+      const idToken = await user.getIdToken();
+      
+      const [internalDependencies, externalDependencies, classList] = await Promise.all([
+        axios.get(`${server_url}/initialize/intDep`, {
+          headers: {
+            'Authorization': idToken,
+            'project_id': projectId,
+          },
+        }),
+        axios.get(`${server_url}/initialize/extDep`, {
+          headers: {
+            'Authorization': idToken,
+            'project_id': projectId,
+          },
+        }),
+        axios.get(`${server_url}/initialize/classList`, {
+          headers: {
+            'Authorization': idToken,
+            'project_id': projectId,
+          },
+        }),
+      ]);
+
+      const response = {
+        internalDependencyList: internalDependencies.data || [],
+        externalDependencyList: externalDependencies.data || [],
+        classNames: classList.data || [],
+      };
+
+      navigate('/mainpage', { state: { response: response } });
+    } catch (error) {
+      console.error('Error opening project:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -79,10 +126,10 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({ user }) => {
         <Card elevation={3}>
           <CardHeader
             title={
-                <Typography variant="h4" align="left" gutterBottom>
-                  Software Visualizer
-                </Typography>
-              }
+              <Typography variant="h4" align="left" gutterBottom>
+                Software Visualizer
+              </Typography>
+            }
             action={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Avatar src={user.photoURL || undefined}>{user.displayName?.charAt(0) || user.email?.charAt(0).toUpperCase()}</Avatar>
@@ -118,7 +165,7 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({ user }) => {
               ) : (
                 <Grid container spacing={2}>
                   {projects.map((project) => (
-                    <Grid item key={project.id} xs={12} sm={6} md={4}>
+                    <Grid item key={project.projectId} xs={12} sm={6} md={4}>
                       <Card 
                         variant="outlined" 
                         sx={{ 
@@ -129,14 +176,20 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({ user }) => {
                         }}
                       >
                         <CardContent>
-                          <Typography variant="h6" noWrap>{project.name}</Typography>
+                          <Typography variant="h6" noWrap>Project {project.projectId}</Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Created: {new Date(project.createdAt).toLocaleString()}
+                            Custom View: {project.custom_view || 'None'}
                           </Typography>
                         </CardContent>
                         <Box sx={{ p: 2, mt: 'auto' }}>
-                          <Button variant="contained" color="primary" fullWidth>
-                            Open Project
+                          <Button 
+                            variant="contained" 
+                            color="primary" 
+                            fullWidth
+                            onClick={() => handleOpenProject(project.projectId)}
+                            disabled={loading}
+                          >
+                            {loading ? <CircularProgress size={24} /> : 'Open Project'}
                           </Button>
                         </Box>
                       </Card>

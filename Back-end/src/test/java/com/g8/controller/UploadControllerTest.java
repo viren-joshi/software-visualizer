@@ -3,6 +3,8 @@ package com.g8.controller;
 import com.g8.service.AnalyzeProjectService;
 import com.g8.service.AuthService;
 import com.g8.service.DependencyRetrievalService;
+import com.google.gson.Gson;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -17,6 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -54,7 +58,7 @@ public class UploadControllerTest {
 
         ResponseEntity<String> responseEntity = new ResponseEntity<>("Success", HttpStatus.OK);
 
-        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(validFile), eq("com.example")))
+        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(validFile), eq("com.example"), any()))
                 .thenReturn(responseEntity);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(validFile);
@@ -72,7 +76,7 @@ public class UploadControllerTest {
         MockMultipartFile invalidFile = new MockMultipartFile("file", "project.txt", MediaType.TEXT_PLAIN_VALUE, "some-content".getBytes());
         ResponseEntity<String> responseEntity = new ResponseEntity<>("Unsupported file", HttpStatus.BAD_REQUEST);
 
-        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(invalidFile), eq("com.example")))
+        Mockito.when(analyzeProjectService.analyzeUploadedProject(eq(invalidFile), eq("com.example"), any()))
                 .thenReturn(responseEntity);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(invalidFile);
@@ -90,7 +94,7 @@ public class UploadControllerTest {
         MockMultipartFile validFile = new MockMultipartFile("file", "project.jar", "application/java-archive", "some-content".getBytes());
         RuntimeException runtimeException = new RuntimeException("Unexpected error");
 
-        Mockito.when(analyzeProjectService.analyzeUploadedProject(any(MockMultipartFile.class), eq("com.example")))
+        Mockito.when(analyzeProjectService.analyzeUploadedProject(any(MockMultipartFile.class), eq("com.example"), any()))
                 .thenThrow(runtimeException);
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(validFile);
@@ -283,5 +287,31 @@ public class UploadControllerTest {
                         .header("Authorization", authorizationToken))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+        public void testGetUserProjects() throws Exception {
+        // Mock the user ID and the authorization token
+        String mockUserId = "mock-user-id";
+        String mockAuthorizationToken = "mock-token";
+
+        // Mock a response for user projects
+        List<Map<String, Object>> mockProjects = List.of(
+                Map.of("projectId", "1", "projectName", "Project A"),
+                Map.of("projectId", "2", "projectName", "Project B")
+        );
+        String mockResponseJson = new Gson().toJson(mockProjects);
+
+        // Mock the AuthService and DependencyRetrievalService behavior
+        Mockito.when(authService.verifyToken(mockAuthorizationToken)).thenReturn(true);
+        Mockito.when(authService.getUserId(mockAuthorizationToken)).thenReturn(mockUserId);
+        Mockito.when(dependencyRetrievalService.getUserProjects(mockUserId))
+                .thenReturn(CompletableFuture.completedFuture(mockProjects));
+
+        // Perform the GET request
+        mockMvc.perform(MockMvcRequestBuilders.get("/initialize/userProjects")
+                .header("Authorization", mockAuthorizationToken))
+                .andExpect(status().isOk())
+                .andExpect(content().json(mockResponseJson));
+        }
 
 }

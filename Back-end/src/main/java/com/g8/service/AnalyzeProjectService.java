@@ -77,7 +77,7 @@ public class AnalyzeProjectService {
     }
 
     // Extracts internal and external dependencies
-    protected String analyzeFile(String jarFilePath) throws Exception {
+    protected String analyzeFile(String jarFilePath, String userId) throws Exception {
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
             jarFile.stream()
@@ -88,7 +88,7 @@ public class AnalyzeProjectService {
                         try {
                             processClassEntry(jarFile, entry);
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            throw new RuntimeException("Error while processing class entry: " + e.getMessage());
                         }
                     }
 
@@ -97,7 +97,7 @@ public class AnalyzeProjectService {
                         try {
                             analyzePomDependencies(entry, jarFile);
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            throw new RuntimeException("Error while processing POM: " + e.getMessage());
                         }
                     }
                 });
@@ -111,6 +111,8 @@ public class AnalyzeProjectService {
         // Create a new document in the Firestore collection "projects" with an auto-generated ID
         CompletableFuture<String> documentId = dependencyRetrievalService.saveData(internalDependencies, externalDependencies, classList);
         documentId.join();
+        CompletableFuture<Void> saveProjectToUser = dependencyRetrievalService.saveProjectToUser(documentId.get(), userId);
+        saveProjectToUser.join();
         return documentId.get();
     }
 
@@ -134,7 +136,7 @@ public class AnalyzeProjectService {
     }
 
     // Gives response to a user's request
-    public ResponseEntity<String> analyzeUploadedProject(MultipartFile file, String classContainer) throws Exception {
+    public ResponseEntity<String> analyzeUploadedProject(MultipartFile file, String classContainer, String userId) throws Exception {
 
         USER_PACKAGE_PREFIX = classContainer.replace(".", "/");
 
@@ -154,7 +156,7 @@ public class AnalyzeProjectService {
         saveFile(file, jarFilePath);
 
         // Analyzing the file
-        String projectId = analyzeFile(jarFilePath);
+        String projectId = analyzeFile(jarFilePath,userId);
 
         return new ResponseEntity<>(projectId, HttpStatus.OK);
     }

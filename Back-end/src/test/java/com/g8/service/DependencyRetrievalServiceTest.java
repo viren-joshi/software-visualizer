@@ -7,13 +7,18 @@ import com.google.cloud.firestore.*;
 import com.google.common.reflect.TypeToken;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -22,6 +27,10 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class DependencyRetrievalServiceTest {
@@ -55,15 +64,21 @@ public class DependencyRetrievalServiceTest {
         MockitoAnnotations.openMocks(this);
         mockFirestore = mock(Firestore.class);
         mockCollectionReference = mock(CollectionReference.class);
-        mockDocumentReference = mock(DocumentReference.class);
+        mockDocumentReference = mock(DocumentReference.class); 
         mockFuture = mock(ApiFuture.class);
         mockDocumentSnapshot = mock(DocumentSnapshot.class);
 
         when(mockFirestore.collection("projects")).thenReturn(mockCollectionReference);
         when(mockCollectionReference.document("testProject")).thenReturn(mockDocumentReference);
+        when(mockFirestore.collection("user_projects")).thenReturn(mockCollectionReference);
         when(mockDocumentReference.get()).thenReturn(mockFuture);
         when(mockFuture.get()).thenReturn(mockDocumentSnapshot);
         when(mockDocumentReference.set(any())).thenReturn(mockWriteResult);
+        when(mockCollectionReference.document("testProject")).thenReturn(mockDocumentReference);
+        when(mockCollectionReference.document("testUser")).thenReturn(mockDocumentReference);
+
+        when(mockDocumentReference.update(anyString(), any(), any())).thenReturn(mockWriteResult);
+        when(mockDocumentReference.set(any(), any(SetOptions.class))).thenReturn(mockWriteResult);
 
         dependencyRetrievalService = new DependencyRetrievalService(mockFirestore);
     }
@@ -271,4 +286,118 @@ public class DependencyRetrievalServiceTest {
         }
     }
 
+    @Test
+    void testSaveProjectToUser() throws Exception {
+        String testProjectId = "testProjectId";
+        String testUserId = "testUserId";
+    
+        // Prepare project info map for verification
+        Map<String, Object> projectInfo = new HashMap<>();
+        projectInfo.put("projectId", testProjectId);
+        projectInfo.put("custom_view", "");
+    
+        // Case 1: User document exists
+        {
+            // Reset mocks
+            reset(mockCollectionReference, mockDocumentReference, mockFuture, mockDocumentSnapshot);
+    
+            // Setup mocks for existing document scenario
+            when(mockFirestore.collection("user_projects")).thenReturn(mockCollectionReference);
+            when(mockCollectionReference.document(testUserId)).thenReturn(mockDocumentReference);
+            
+            // Simulate existing document
+            when(mockDocumentReference.get()).thenReturn(mockFuture);
+            when(mockFuture.get()).thenReturn(mockDocumentSnapshot);
+            when(mockDocumentSnapshot.exists()).thenReturn(true);
+    
+            // Mock the update method
+            when(mockDocumentReference.update(eq("projects"), any(FieldValue.class)))
+                .thenReturn(mock(ApiFuture.class));
+    
+            // Execute and verify
+            CompletableFuture<Void> result = dependencyRetrievalService.saveProjectToUser(testProjectId, testUserId);
+            result.join();
+    
+            verify(mockDocumentReference, times(1)).update(eq("projects"), any(FieldValue.class));
+        }
+    
+        // Case 2: User document does not exist
+        {
+            // Reset mocks
+            reset(mockCollectionReference, mockDocumentReference, mockFuture, mockDocumentSnapshot);
+    
+            // Setup mocks for non-existing document scenario
+            when(mockFirestore.collection("user_projects")).thenReturn(mockCollectionReference);
+            when(mockCollectionReference.document(testUserId)).thenReturn(mockDocumentReference);
+            
+            // Simulate non-existing document
+            when(mockDocumentReference.get()).thenReturn(mockFuture);
+            when(mockFuture.get()).thenReturn(mockDocumentSnapshot);
+            when(mockDocumentSnapshot.exists()).thenReturn(false);
+    
+            // Mock the set method
+            when(mockDocumentReference.set(any(Map.class), eq(SetOptions.merge())))
+                .thenReturn(mock(ApiFuture.class));
+    
+            // Execute and verify
+            CompletableFuture<Void> result = dependencyRetrievalService.saveProjectToUser(testProjectId, testUserId);
+            result.join();
+    
+            verify(mockDocumentReference, times(1)).set(
+                argThat(argument -> {
+                    if (argument instanceof Map) {
+                        Map<String, Object> userData = (Map<String, Object>) argument;
+                        List<Map<String, Object>> projects = (List<Map<String, Object>>) userData.get("projects");
+                        return projects != null && 
+                               projects.size() == 1 && 
+                               projects.get(0).get("projectId").equals(testProjectId);
+                    }
+                    return false;
+                }), 
+                eq(SetOptions.merge())
+            );
+        }
+    }
+
+    @Test
+    void testGetUserProjects_withExistingUserIdAndProjects() throws Exception {
+        // Arrange
+        String userId = "testUser";
+        List<Map<String, Object>> mockProjects = List.of(
+            Map.of("projectId", "123", "projectName", "Project A"),
+            Map.of("projectId", "456", "projectName", "Project B")
+        );
+        DocumentSnapshot mockSnapshot = Mockito.mock(DocumentSnapshot.class);
+        Mockito.when(mockSnapshot.exists()).thenReturn(true);
+        Mockito.when(mockSnapshot.get("projects")).thenReturn(mockProjects);
+    
+        ApiFuture<DocumentSnapshot> mockApiFuture = Mockito.mock(ApiFuture.class);
+        Mockito.when(mockApiFuture.get()).thenReturn(mockSnapshot);
+        Mockito.when(mockCollectionReference.document(userId).get()).thenReturn(mockApiFuture);
+    
+        // Act
+        CompletableFuture<List<Map<String, Object>>> result = dependencyRetrievalService.getUserProjects(userId);
+    
+        // Assert
+        Assertions.assertEquals(mockProjects, result.get());
+    }
+
+    @Test
+    void testGetUserProjects_withExistingUserIdAndNoProjects() throws Exception {
+    // Arrange
+    String userId = "testUser";
+    DocumentSnapshot mockSnapshot = Mockito.mock(DocumentSnapshot.class);
+    Mockito.when(mockSnapshot.exists()).thenReturn(true);
+    Mockito.when(mockSnapshot.get("projects")).thenReturn(null);
+ 
+    ApiFuture<DocumentSnapshot> mockApiFuture = Mockito.mock(ApiFuture.class);
+    Mockito.when(mockApiFuture.get()).thenReturn(mockSnapshot);
+    Mockito.when(mockCollectionReference.document(userId).get()).thenReturn(mockApiFuture);
+ 
+    // Act
+    CompletableFuture<List<Map<String, Object>>> result = dependencyRetrievalService.getUserProjects(userId);
+ 
+    // Assert
+    Assertions.assertEquals(Collections.emptyList(), result.get());
+}
 }
