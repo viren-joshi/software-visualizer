@@ -38,7 +38,6 @@ public class DependencyRetrievalServiceTest {
     @Mock
     private DocumentReference mockDocumentReference;
 
-
     @Mock
     private ApiFuture<DocumentSnapshot> mockFuture;
 
@@ -408,15 +407,13 @@ public class DependencyRetrievalServiceTest {
         Map<String, Object> customViewData = new HashMap<>();
         customViewData.put("data", customViewData);
         DocumentReference customViewRefDoc = mock(DocumentReference.class);
-        when(customViewsCollectionReference.document()).thenReturn(customViewRefDoc);
-
-
-        // Mocking Firestore operations for user document not found
         DocumentReference userDocRef = mock(DocumentReference.class);
-        when(userProjectCollectionReference.document(userId)).thenReturn(userDocRef);
         ApiFuture<DocumentSnapshot> userDocFuture = mock(ApiFuture.class);
-        when(userDocRef.get()).thenReturn(userDocFuture);
         DocumentSnapshot userDocSnapshot = mock(DocumentSnapshot.class);
+
+        when(customViewsCollectionReference.document()).thenReturn(customViewRefDoc);
+        when(userProjectCollectionReference.document(userId)).thenReturn(userDocRef);
+        when(userDocRef.get()).thenReturn(userDocFuture);
         when(userDocFuture.get()).thenReturn(userDocSnapshot);
         when(userDocSnapshot.exists()).thenReturn(false);
 
@@ -437,23 +434,22 @@ public class DependencyRetrievalServiceTest {
 
         // Mocking Firestore operations
         DocumentReference customViewDocRef = mock(DocumentReference.class);
-        when(customViewsCollectionReference.document()).thenReturn(customViewDocRef);
+        DocumentReference userDocRef = mock(DocumentReference.class);
+        ApiFuture<DocumentSnapshot> userDocFuture = mock(ApiFuture.class);
         ApiFuture<WriteResult> writeResultFuture = mock(ApiFuture.class);
+        DocumentSnapshot userDocSnapshot = mock(DocumentSnapshot.class);
+        ApiFuture<WriteResult> updateWriteResult = mock(ApiFuture.class);
+
+        when(customViewsCollectionReference.document()).thenReturn(customViewDocRef);
         when(customViewDocRef.set(any())).thenReturn(writeResultFuture);
         when(customViewDocRef.getId()).thenReturn("customView123");
         when(writeResultFuture.get()).thenReturn(mock(WriteResult.class));
-
         // Mocking user document existence and updates
-        DocumentReference userDocRef = mock(DocumentReference.class);
         when(userProjectCollectionReference.document(userId)).thenReturn(userDocRef);
-        ApiFuture<DocumentSnapshot> userDocFuture = mock(ApiFuture.class);
         when(userDocRef.get()).thenReturn(userDocFuture);
-        DocumentSnapshot userDocSnapshot = mock(DocumentSnapshot.class);
         when(userDocFuture.get()).thenReturn(userDocSnapshot);
         when(userDocSnapshot.exists()).thenReturn(true);
         when(userDocSnapshot.get("projects")).thenReturn(Collections.emptyList());
-
-        ApiFuture<WriteResult> updateWriteResult = mock(ApiFuture.class);
         when(userDocRef.update(anyString(), any(), any())).thenReturn(updateWriteResult);
         when(updateWriteResult.get()).thenReturn(mock(WriteResult.class));
 
@@ -473,10 +469,11 @@ public class DependencyRetrievalServiceTest {
 
         // Mocking Firestore operations
         DocumentReference customViewDocRef = mock(DocumentReference.class);
-        when(customViewsCollectionReference.document(customViewId)).thenReturn(customViewDocRef);
         ApiFuture<DocumentSnapshot> documentSnapshotApiFuture = mock(ApiFuture.class);
-        when(customViewDocRef.get()).thenReturn(documentSnapshotApiFuture);
         DocumentSnapshot customViewDocSnapshot = mock(DocumentSnapshot.class);
+
+        when(customViewsCollectionReference.document(customViewId)).thenReturn(customViewDocRef);
+        when(customViewDocRef.get()).thenReturn(documentSnapshotApiFuture);
         when(documentSnapshotApiFuture.get()).thenReturn(customViewDocSnapshot);
         when(customViewDocSnapshot.exists()).thenReturn(true);
         when(customViewDocSnapshot.getData()).thenReturn(Collections.singletonMap("dataKey", "dataValue"));
@@ -498,10 +495,11 @@ public class DependencyRetrievalServiceTest {
 
         // Mocking Firestore operations
         DocumentReference customViewDocRef = mock(DocumentReference.class);
-        when(customViewsCollectionReference.document(customViewId)).thenReturn(customViewDocRef);
         ApiFuture<DocumentSnapshot> documentSnapshotApiFuture = mock(ApiFuture.class);
-        when(customViewDocRef.get()).thenReturn(documentSnapshotApiFuture);
         DocumentSnapshot customViewDocSnapshot = mock(DocumentSnapshot.class);
+
+        when(customViewsCollectionReference.document(customViewId)).thenReturn(customViewDocRef);
+        when(customViewDocRef.get()).thenReturn(documentSnapshotApiFuture);
         when(documentSnapshotApiFuture.get()).thenReturn(customViewDocSnapshot);
         when(customViewDocSnapshot.exists()).thenReturn(false);
 
@@ -513,8 +511,4 @@ public class DependencyRetrievalServiceTest {
         verify(customViewsCollectionReference).document(customViewId);
         verify(customViewDocRef).get();
     }
-
-
-
-
 }
