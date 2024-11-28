@@ -129,7 +129,7 @@ public class UploadController {
 
     @GetMapping("/userProjects")
     public ResponseEntity<String> getUserProjects(@RequestHeader("Authorization") String idToken) {
-            if (!authService.verifyToken(idToken)) {
+        if (!authService.verifyToken(idToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
         }
 
@@ -145,5 +145,27 @@ public class UploadController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
+    }
+
+    @PostMapping("/createCustomView")
+    public ResponseEntity<String> createCustomView(
+            @RequestHeader("Authorization") String idToken,
+            @RequestParam("data") Map<String, Object> data,
+            @RequestParam("projectId") String projectId) {
+        // TODO: Implement token verification
+        // TODO: Get user ID from the token
+        // TODO: Use service to create a custom view
+        // TODO: Handle exceptions and send appropriate HTTP responses
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    }
+
+    @GetMapping("/getCustomView")
+    public ResponseEntity<String> getCustomView(
+            @RequestHeader("Authorization") String idToken,
+            @RequestParam("customViewId") String customViewId) {
+        // TODO: Implement token verification
+        // TODO: Use service to retrieve the custom view data
+        // TODO: Handle exceptions and send appropriate HTTP responses
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
     }
 }

@@ -1,5 +1,6 @@
 package com.g8.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.g8.service.AnalyzeProjectService;
 import com.g8.service.AuthService;
 import com.g8.service.DependencyRetrievalService;
@@ -310,5 +311,98 @@ public class UploadControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json(mockResponseJson));
         }
+
+        @Test
+        void testCreateCustomView_Success() throws Exception {
+        Map<String, Object> data = Map.of("key", "value");
+        String requestBody = new ObjectMapper().writeValueAsString(data);
+        String responseMessage = "customView123";
+
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+        Mockito.when(authService.getUserId(authorizationToken)).thenReturn("testUser");
+        Mockito.when(dependencyRetrievalService.createCustomView("testUser", projectId, data))
+                .thenReturn(CompletableFuture.completedFuture(responseMessage));
+
+        mockMvc.perform(MockMvcRequestBuilders.post(baseURL + "/createCustomView")
+                .header("Authorization", authorizationToken)
+                .param("data", requestBody)
+                .param("projectId", projectId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(responseMessage));
+        }
+
+        @Test
+        void testCreateCustomView_Unauthorized() throws Exception {
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(false);
+
+        mockMvc.perform(MockMvcRequestBuilders.post(baseURL + "/createCustomView")
+                .header("Authorization", authorizationToken)
+                .param("data", "{}")
+                .param("projectId", projectId))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Unauthorized API access"));
+        }
+
+        @Test
+        void testCreateCustomView_Exception() throws Exception {
+        Map<String, Object> data = Map.of("key", "value");
+        String requestBody = new ObjectMapper().writeValueAsString(data);
+
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+        Mockito.when(authService.getUserId(authorizationToken)).thenReturn("testUser");
+        Mockito.when(dependencyRetrievalService.createCustomView("testUser", projectId, data))
+                .thenThrow(new RuntimeException("Service error"));
+
+        mockMvc.perform(MockMvcRequestBuilders.post(baseURL + "/createCustomView")
+                .header("Authorization", authorizationToken)
+                .param("data", requestBody)
+                .param("projectId", projectId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Service error"));
+        }
+
+        @Test
+        void testGetCustomView_Success() throws Exception {
+        String customViewId = "customView123";
+        Map<String, Object> data = Map.of("key", "value");
+        String jsonResponse = new Gson().toJson(data);
+
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+        Mockito.when(dependencyRetrievalService.getCustomViewData(customViewId))
+                .thenReturn(CompletableFuture.completedFuture(data));
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/getCustomView")
+                .header("Authorization", authorizationToken)
+                .param("customViewId", customViewId))
+                .andExpect(status().isOk())
+                .andExpect(content().json(jsonResponse));
+        }
+
+        @Test
+        void testGetCustomView_Unauthorized() throws Exception {
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(false);
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/getCustomView")
+                .header("Authorization", authorizationToken)
+                .param("customViewId", "customView123"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string("Unauthorized API access"));
+        }
+
+        @Test
+        void testGetCustomView_Exception() throws Exception {
+        String customViewId = "customView123";
+
+        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+        Mockito.when(dependencyRetrievalService.getCustomViewData(customViewId))
+                .thenThrow(new RuntimeException("Service error"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/getCustomView")
+                .header("Authorization", authorizationToken)
+                .param("customViewId", customViewId))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string("Service error"));
+        }
+
 
 }
