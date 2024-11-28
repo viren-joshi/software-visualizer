@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/initialize")
-@CrossOrigin(origins = "*")
 public class UploadController {
 
     private final AnalyzeProjectService analyzeProjectService;
@@ -148,24 +147,36 @@ public class UploadController {
     }
 
     @PostMapping("/createCustomView")
-    public ResponseEntity<String> createCustomView(
-            @RequestHeader("Authorization") String idToken,
-            @RequestParam("data") Map<String, Object> data,
-            @RequestParam("projectId") String projectId) {
-        // TODO: Implement token verification
-        // TODO: Get user ID from the token
-        // TODO: Use service to create a custom view
-        // TODO: Handle exceptions and send appropriate HTTP responses
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    public ResponseEntity<String> createCustomView(@RequestHeader("Authorization") String idToken,@RequestBody Map<String, Object> data) {
+        String projectId = data.get("projectId").toString();
+        if (!authService.verifyToken(idToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
+        }
+        String userId = authService.getUserId(idToken);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid user");
+        }
+
+        try {
+            CompletableFuture<String> response = dependencyRetrievalService.createCustomView(userId, projectId, data);
+            response.join();
+            return ResponseEntity.ok(response.get());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 
     @GetMapping("/getCustomView")
-    public ResponseEntity<String> getCustomView(
-            @RequestHeader("Authorization") String idToken,
-            @RequestParam("customViewId") String customViewId) {
-        // TODO: Implement token verification
-        // TODO: Use service to retrieve the custom view data
-        // TODO: Handle exceptions and send appropriate HTTP responses
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body("Not implemented yet");
+    public ResponseEntity<String> getCustomView(@RequestHeader("Authorization") String idToken, @RequestParam("customViewId") String customViewId) {
+        if(!authService.verifyToken(idToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
+        }
+        try {
+            CompletableFuture<Map<String,Object>> response = dependencyRetrievalService.getCustomViewData(customViewId);
+            response.join();
+            return ResponseEntity.ok(new Gson().toJson(response.get()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 }
