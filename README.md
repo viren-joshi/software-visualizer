@@ -229,7 +229,7 @@ Our project's requirement is such that it does not need interfaces to be extende
 ![Screenshot 2024-11-28 at 7.22.59 PM](https://hackmd.io/_uploads/r1gviuLQye.png)
 Figure 1: Architecture code smells - extracted from Designite
 2. Design Smells
-![Screenshot 2024-11-28 at 7.24.29 PM](https://hackmd.io/_uploads/BJO2sOL71x.png)
+![Screenshot 2024-11-28 at 7.46.17 PM](https://hackmd.io/_uploads/SJI0etUQke.png)
 Figure 2: Design code smells and their status - extracted from Designite
 3. Implementation Smells
 ![Screenshot 2024-11-28 at 7.12.38 PM](https://hackmd.io/_uploads/BJmlF_Lmkl.png)
