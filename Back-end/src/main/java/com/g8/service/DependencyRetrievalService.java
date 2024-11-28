@@ -5,6 +5,9 @@ import com.g8.model.ExternalDependencyInfo;
 import com.google.cloud.firestore.*;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -15,22 +18,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Service
 public class DependencyRetrievalService {
 
     private final CollectionReference collectionReference;
     private final CollectionReference userProjectsCollection;
+    private final Logger logger;
     private static final Gson gson = new Gson();
 
-    DependencyRetrievalService(Firestore firestore) {
+    public DependencyRetrievalService(Firestore firestore) {
         this.collectionReference = firestore.collection("projects");
         this.userProjectsCollection = firestore.collection("user_projects");
+        logger = LoggerFactory.getLogger(DependencyRetrievalService.class);
     }
 
     @Async
     public CompletableFuture<String> getInternalDependencies(String projectId) {
 
         try {
+
             // Retrieve the collection with the name `projectId`
             DocumentSnapshot projectCollection = collectionReference.document(projectId).get().get();
 
@@ -50,6 +57,7 @@ public class DependencyRetrievalService {
             return CompletableFuture.completedFuture(null);
 
         }  catch (Exception e) {
+            logger.info(e.getMessage());
             throw new RuntimeException("Error retrieving internal dependencies");
         }
     }
@@ -70,6 +78,7 @@ public class DependencyRetrievalService {
             return CompletableFuture.completedFuture(null);
 
         }  catch (Exception e) {
+            logger.info(e.getMessage());
             throw new RuntimeException("Error retrieving classList");
         }
     }
@@ -96,6 +105,7 @@ public class DependencyRetrievalService {
             return CompletableFuture.completedFuture(null);
 
         } catch (Exception e) {
+            logger.info(e.getMessage());
             throw new RuntimeException("Error retrieving external dependencies");
         }
     }
@@ -118,6 +128,7 @@ public class DependencyRetrievalService {
             // Retrieve the generated document ID
             return CompletableFuture.completedFuture(documentReference.getId());
         } catch (Exception e) {
+            logger.info(e.getMessage());
             throw new RuntimeException("Error while saving the project data in firestore");
         }
     }
@@ -144,6 +155,7 @@ public class DependencyRetrievalService {
                     userDocRef.set(userData, SetOptions.merge()).get();
                 }
             } catch (Exception e) {
+                logger.info(e.getMessage());
                 throw new RuntimeException("Error while saving project to user");
             }
         });
@@ -161,6 +173,7 @@ public class DependencyRetrievalService {
                 }
                 return Collections.emptyList();
             } catch (Exception e) {
+                logger.info(e.getMessage());
                 throw new RuntimeException("Error retrieving user projects: " + e.getMessage(), e);
             }
         });

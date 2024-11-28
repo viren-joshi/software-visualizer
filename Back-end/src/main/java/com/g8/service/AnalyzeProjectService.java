@@ -77,7 +77,7 @@ public class AnalyzeProjectService {
     }
 
     // Extracts internal and external dependencies
-    protected String analyzeFile(String jarFilePath, String userId) throws Exception {
+    public String analyzeFile(String jarFilePath, String userId) throws Exception {
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
             jarFile.stream()
@@ -213,15 +213,15 @@ public class AnalyzeProjectService {
         }
     }
 
-    protected void setUSER_PACKAGE_PREFIX(String val) {
+    public void setUSER_PACKAGE_PREFIX(String val) {
         this.USER_PACKAGE_PREFIX = val;
     }
 
-    List<Map<String, Object>> getInternalForTest() {
+    public List<Map<String, Object>> getInternalForTest() {
         return internalDependencies;
      }
 
-    List<Map<String, String>> getExternalForTest() {
+    public List<Map<String, String>> getExternalForTest() {
         return externalDependencies;
     }
 }
