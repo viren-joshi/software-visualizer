@@ -76,7 +76,7 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({ user }) => {
     setLoading(true);
     try {
       const idToken = await user.getIdToken();
-      
+      localStorage.setItem('current-projectId', projectId);
       const [internalDependencies, externalDependencies, classList] = await Promise.all([
         axios.get(`${server_url}/initialize/intDep`, {
           headers: {

@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/initialize")
-@CrossOrigin(origins = "*")
 public class UploadController {
 
     private final AnalyzeProjectService analyzeProjectService;
@@ -129,7 +128,7 @@ public class UploadController {
 
     @GetMapping("/userProjects")
     public ResponseEntity<String> getUserProjects(@RequestHeader("Authorization") String idToken) {
-            if (!authService.verifyToken(idToken)) {
+        if (!authService.verifyToken(idToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
         }
 
@@ -142,6 +141,40 @@ public class UploadController {
             CompletableFuture<List<Map<String, Object>>> projectsFuture = dependencyRetrievalService.getUserProjects(userId);
             List<Map<String, Object>> projects = projectsFuture.get();
             return ResponseEntity.ok(new Gson().toJson(projects));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/createCustomView")
+    public ResponseEntity<String> createCustomView(@RequestHeader("Authorization") String idToken,@RequestBody Map<String, Object> data) {
+        String projectId = data.get("projectId").toString();
+        if (!authService.verifyToken(idToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
+        }
+        String userId = authService.getUserId(idToken);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid user");
+        }
+
+        try {
+            CompletableFuture<String> response = dependencyRetrievalService.createCustomView(userId, projectId, data);
+            response.join();
+            return ResponseEntity.ok(response.get());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/getCustomView")
+    public ResponseEntity<String> getCustomView(@RequestHeader("Authorization") String idToken, @RequestParam("customViewId") String customViewId) {
+        if(!authService.verifyToken(idToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized API access");
+        }
+        try {
+            CompletableFuture<Map<String,Object>> response = dependencyRetrievalService.getCustomViewData(customViewId);
+            response.join();
+            return ResponseEntity.ok(new Gson().toJson(response.get()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }

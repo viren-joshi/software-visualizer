@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import React from "react";
 import dagre from "dagre";
+import axios from 'axios';
 import { useCallback, useEffect } from "react";
 import {
   ReactFlow,
@@ -29,6 +30,8 @@ import {
 } from "../mainpage/Main";
 import Filter from "../filter/Filter";
 import Tree from "react-d3-tree";
+
+const server_url = process.env.REACT_APP_SERVER_URL;
 
 export interface TreeNode {
   name: string;
@@ -311,6 +314,31 @@ const GraphWhiteBoard: React.FC<GraphWhiteBoardProps> = ({
     };
     console.log("Graph data:", graph);
     // Save graph to a database, file, or localStorage if needed
+    try {
+      let graphData = JSON.stringify({
+        nodes: graph.nodes,
+        edges: graph.edges,
+        projectId: localStorage.getItem("current-projectId"),
+      });
+      let config = {
+        method: "post",
+        url: `${server_url}/initialize/createCustomView`,
+        headers: {
+          "Authorization": localStorage.getItem("soft-viz-tokenID"),
+          "Content-Type": "application/json",
+        },
+        data: graphData,
+      }
+
+      axios.request(config).then((response) => {
+        alert("Graph saved successfully.");
+      });
+      
+    } catch (error) {
+      console.error("Failed to save the graph:", error);
+      alert("Failed to save the graph. Please try again.");
+    }
+
   };
   const treeData = processTreeData(jsonData.externalDependencyList);
   return (
