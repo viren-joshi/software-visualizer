@@ -1,4 +1,4 @@
-package com.g8.utils;
+package com.g8.props;
 
 import lombok.Getter;
 import lombok.Setter;

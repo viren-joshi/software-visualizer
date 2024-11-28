@@ -2,7 +2,7 @@ package com.g8.service;
 
 import com.g8.model.ClassInfo;
 import com.g8.utils.ClassVisitor;
-import com.g8.utils.FileProps;
+import com.g8.props.FileProps;
 import com.google.gson.Gson;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;

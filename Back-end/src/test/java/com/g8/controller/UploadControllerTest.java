@@ -157,37 +157,42 @@ public class UploadControllerTest {
     public void testUnauthorizedAccessForUpload() throws Exception {
         MockMultipartFile validFile = new MockMultipartFile("file", "project.jar", "application/java-archive", "some-content".getBytes());
 
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(validFile);
+        builder.param("classContainer", "com.example");
+        builder.header("Authorization", authorizationToken);
+        builder.contentType(MediaType.MULTIPART_FORM_DATA);
+
         Mockito.when(authService.verifyToken(any())).thenReturn(false);
 
-        mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
-                        .file(validFile)
-                        .param("classContainer", "com.example")
-                        .header("Authorization", "invalid-token")
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+        mockMvc.perform(builder)
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string("Unauthorized API access"));
     }
 
     @Test
     public void testUnauthorizedAccessForInternalDependencies() throws Exception {
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/intDep");
+        builder.header("project_id", projectId);
+        builder.header("Authorization", "invalid-token");
+
         Mockito.when(authService.verifyToken(any())).thenReturn(false);
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
-                        .header("Authorization", "invalid-token")
-                        .header("project_id", projectId))
+        mockMvc.perform(builder)
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().string("Unauthorized API access"));
     }
 
     @Test
     public void testUploadProjectWithEmptyFile() throws Exception {
+
         MockMultipartFile emptyFile = new MockMultipartFile("file", "project.jar", "application/java-archive", new byte[0]);
 
-        mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
-                        .file(emptyFile)
-                        .param("classContainer", "com.example")
-                        .header("Authorization", authorizationToken)
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(emptyFile);
+        builder.param("classContainer", "com.example");
+        builder.header("Authorization", authorizationToken);
+        builder.contentType(MediaType.MULTIPART_FORM_DATA);
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("File is empty. Please upload a valid file."));
     }
@@ -196,11 +201,12 @@ public class UploadControllerTest {
     public void testUploadProjectWithMissingClassContainer() throws Exception {
         MockMultipartFile validFile = new MockMultipartFile("file", "project.jar", "application/java-archive", "some-content".getBytes());
 
-        mockMvc.perform(MockMvcRequestBuilders.multipart(baseURL + "/upload")
-                        .file(validFile)
-                        .header("Authorization", authorizationToken)
-                        .param("classContainer", "")
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.multipart(baseURL + "/upload").file(validFile);
+        builder.param("classContainer", "");
+        builder.header("Authorization", authorizationToken);
+        builder.contentType(MediaType.MULTIPART_FORM_DATA);
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Class container is required."));
     }
@@ -210,20 +216,24 @@ public class UploadControllerTest {
         Mockito.when(dependencyRetrievalService.getInternalDependencies(any()))
                 .thenThrow(new RuntimeException("Mock error"));
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
-                        .header("Authorization", authorizationToken)
-                        .header("project_id", projectId))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/intDep");
+        builder.header("Authorization", authorizationToken);
+        builder.header("project_id", projectId);
+
+        mockMvc.perform(builder)
                 .andExpect(status().isInternalServerError());
     }
 
     @Test
     public void testExternalDependenciesWithException() throws Exception {
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/extDep");
+        builder.header("Authorization", authorizationToken);
+        builder.header("project_id", projectId);
+
         Mockito.when(dependencyRetrievalService.getExternalDependencies(any()))
                 .thenThrow(new RuntimeException("mock error"));
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
-                        .header("Authorization", authorizationToken)
-                        .header("project_id", projectId))
+        mockMvc.perform(builder)
                 .andExpect(status().isInternalServerError());
     }
 
@@ -232,58 +242,72 @@ public class UploadControllerTest {
 
         String mockResponseBody = "Failed to retrieve the class list";
 
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/classList");
+        builder.header("Authorization", authorizationToken);
+        builder.header("project_id", projectId);
+
         Mockito.when(dependencyRetrievalService.getClassList(any()))
                 .thenThrow(new RuntimeException(mockResponseBody));
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
-                        .header("Authorization", authorizationToken)
-                        .header("project_id", projectId))
+        mockMvc.perform(builder)
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(mockResponseBody));
     }
 
     @Test
     public void testGetInternalDependenciesWithMissingProjectId() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
-                        .header("Authorization", authorizationToken))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/intDep");
+        builder.header("Authorization", authorizationToken);
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testGetExternalDependenciesWithMissingProjectId() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
-                        .header("Authorization", authorizationToken))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/extDep");
+        builder.header("Authorization", authorizationToken);
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testGetInternalDependenciesWithEmptyProjectId() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/intDep")
-                        .header("Authorization", authorizationToken)
-                        .header("project_id", ""))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/intDep");
+        builder.header("Authorization", authorizationToken);
+        builder.header("project_id", "");
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testGetExternalDependenciesWithEmptyProjectId() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/extDep")
-                        .header("Authorization", authorizationToken)
-                        .header("project_id", ""))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/extDep");
+        builder.header("Authorization", authorizationToken);
+        builder.header("project_id", "");
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testGetClassListWithEmptyProjectId() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
-                        .header("Authorization", authorizationToken)
-                        .header("project_id", ""))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/classList");
+        builder.header("Authorization", authorizationToken);
+        builder.param("project_id", "");
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testGetClassListWithMissingProjectId() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/classList")
-                        .header("Authorization", authorizationToken))
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/classList");
+        builder.header("Authorization", authorizationToken);
+
+        mockMvc.perform(builder)
                 .andExpect(status().isBadRequest());
     }
 
@@ -315,104 +339,117 @@ public class UploadControllerTest {
 
         @Test
         void testCreateCustomView_Success() throws Exception {
-                String mockUserId = "mock-user-id";
-                String mockAuthorizationToken = "mock-token";
-                Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
-                String requestBody = new ObjectMapper().writeValueAsString(data);
-                String responseMessage = "customView123";
+            String mockUserId = "mock-user-id";
+            String mockAuthorizationToken = "mock-token";
+            Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
+            String requestBody = new ObjectMapper().writeValueAsString(data);
+            String responseMessage = "customView123";
 
-                Mockito.when(authService.verifyToken(mockAuthorizationToken)).thenReturn(true);
-                Mockito.when(authService.getUserId(mockAuthorizationToken)).thenReturn(mockUserId);
-                Mockito.when(dependencyRetrievalService.createCustomView(mockUserId, projectId, data))
-                        .thenReturn(CompletableFuture.completedFuture(responseMessage));
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post(baseURL + "/createCustomView");
+            builder.header("Authorization", authorizationToken);
+            builder.contentType(MediaType.APPLICATION_JSON);
+            builder.content(requestBody);
+            builder.param("projectId", projectId);
 
-                mockMvc.perform(MockMvcRequestBuilders.post(baseURL + "/createCustomView")
-                        .header("Authorization", authorizationToken)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(requestBody)
-                        .param("projectId", projectId))
-                        .andExpect(status().isOk())
-                        .andExpect(content().string(responseMessage));
+            Mockito.when(authService.verifyToken(mockAuthorizationToken)).thenReturn(true);
+            Mockito.when(authService.getUserId(mockAuthorizationToken)).thenReturn(mockUserId);
+            Mockito.when(dependencyRetrievalService.createCustomView(mockUserId, projectId, data))
+                    .thenReturn(CompletableFuture.completedFuture(responseMessage));
+
+            mockMvc.perform(builder)
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(responseMessage));
         }
 
         @Test
         void testCreateCustomView_Unauthorized() throws Exception {
-                reset(authService);
-                String projectId = "mock-project-id";
-        	Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
-                String requestBody = new ObjectMapper().writeValueAsString(data);
-                Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(false);
+            reset(authService);
+            String projectId = "mock-project-id";
+            Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
+            String requestBody = new ObjectMapper().writeValueAsString(data);
 
-                mockMvc.perform(MockMvcRequestBuilders.post(baseURL + "/createCustomView")
-                        .header("Authorization", authorizationToken)
-						.contentType(MediaType.APPLICATION_JSON)
-                        .content( requestBody)
-                        .param("projectId", projectId))
-                        .andExpect(status().isUnauthorized())
-                        .andExpect(content().string("Unauthorized API access"));
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post(baseURL + "/createCustomView");
+            builder.header("Authorization", authorizationToken);
+            builder.contentType(MediaType.APPLICATION_JSON);
+            builder.content(requestBody);
+            builder.param("projectId", projectId);
+
+            Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(false);
+
+            mockMvc.perform(builder)
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(content().string("Unauthorized API access"));
         }
 
         @Test
         void testCreateCustomView_Exception() throws Exception {
-		String projectId = "mock-project-id";
+		    String projectId = "mock-project-id";
         	Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
-                String requestBody = new ObjectMapper().writeValueAsString(data);
+            String requestBody = new ObjectMapper().writeValueAsString(data);
 
-                Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
-                Mockito.when(authService.getUserId(authorizationToken)).thenReturn("testUser");
-                Mockito.when(dependencyRetrievalService.createCustomView("testUser", projectId, data))
-                                .thenThrow(new RuntimeException(""));
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post(baseURL + "/createCustomView");
+            builder.header("Authorization", authorizationToken);
+            builder.contentType(MediaType.APPLICATION_JSON);
+            builder.content(requestBody);
+            builder.param("projectId", projectId);
 
-                mockMvc.perform(MockMvcRequestBuilders.post(baseURL + "/createCustomView")
-                                .header("Authorization", authorizationToken)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody)
-                                .param("projectId", projectId))
-                                .andExpect(status().isInternalServerError())
-                                .andExpect(content().string(""));
+            Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+            Mockito.when(authService.getUserId(authorizationToken)).thenReturn("testUser");
+            Mockito.when(dependencyRetrievalService.createCustomView("testUser", projectId, data))
+                            .thenThrow(new RuntimeException(""));
+
+            mockMvc.perform(builder)
+                            .andExpect(status().isInternalServerError())
+                            .andExpect(content().string(""));
         }
 
         @Test
         void testGetCustomView_Success() throws Exception {
-        String customViewId = "customView123";
-        Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
-        String jsonResponse = new Gson().toJson(data);
+            String customViewId = "customView123";
+            Map<String, Object> data = Map.of("key", "value", "projectId", projectId);
+            String jsonResponse = new Gson().toJson(data);
 
-        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
-        Mockito.when(dependencyRetrievalService.getCustomViewData(customViewId))
-                .thenReturn(CompletableFuture.completedFuture(data));
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/getCustomView");
+            builder.header("Authorization", authorizationToken);
+            builder.param("customViewId", customViewId);
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/getCustomView")
-                .header("Authorization", authorizationToken)
-                .param("customViewId", customViewId))
-                .andExpect(status().isOk())
-                .andExpect(content().json(jsonResponse));
+            Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+            Mockito.when(dependencyRetrievalService.getCustomViewData(customViewId))
+                    .thenReturn(CompletableFuture.completedFuture(data));
+
+            mockMvc.perform(builder)
+                    .andExpect(status().isOk())
+                    .andExpect(content().json(jsonResponse));
         }
 
         @Test
         void testGetCustomView_Unauthorized() throws Exception {
-        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(false);
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/getCustomView");
+            builder.header("Authorization", authorizationToken);
+            builder.param("customViewId", "customView123");
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/getCustomView")
-                .header("Authorization", authorizationToken)
-                .param("customViewId", "customView123"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(content().string("Unauthorized API access"));
+            Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(false);
+
+            mockMvc.perform(builder)
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(content().string("Unauthorized API access"));
         }
 
         @Test
         void testGetCustomView_Exception() throws Exception {
-        String customViewId = "customView123";
+            String customViewId = "customView123";
 
-        Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
-        Mockito.when(dependencyRetrievalService.getCustomViewData(customViewId))
-                .thenThrow(new RuntimeException("Service error"));
+            MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(baseURL + "/getCustomView");
+            builder.header("Authorization", authorizationToken);
+            builder.param("customViewId", "customView123");
 
-        mockMvc.perform(MockMvcRequestBuilders.get(baseURL + "/getCustomView")
-                .header("Authorization", authorizationToken)
-                .param("customViewId", customViewId))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Service error"));
+            Mockito.when(authService.verifyToken(authorizationToken)).thenReturn(true);
+            Mockito.when(dependencyRetrievalService.getCustomViewData(customViewId))
+                    .thenThrow(new RuntimeException("Service error"));
+
+            mockMvc.perform(builder)
+                    .andExpect(status().isInternalServerError())
+                    .andExpect(content().string("Service error"));
         }
 
 
