@@ -126,8 +126,8 @@ const UploadFile: React.FC<UploadFileProps> = ({ user }) => {
         throw new Error('Upload failed');
       }
 
-      const project_id = uploadResponse.data;
-
+      let project_id = String(uploadResponse.data);
+      localStorage.setItem('current-projectId', project_id);
       const internalDependencies = await axios.get(`${server_url}/initialize/intDep`, {
         headers: {
           'Authorization': token,
