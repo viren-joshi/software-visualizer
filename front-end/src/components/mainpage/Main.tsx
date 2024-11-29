@@ -18,7 +18,7 @@ import {
 import { CloudUpload, FolderOpen, Menu as MenuIcon } from "@mui/icons-material";
 import Sidebar from "../sidebar/Sidebar";
 import GraphWhiteBoard from "../graphWhiteBoard/GraphWhiteBoard";
-import { useLocation, Navigate } from "react-router-dom";
+import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { User } from "firebase/auth";
 
@@ -92,6 +92,8 @@ const Main: React.FC<MainProps> = ({ user }) => {
   const [selectedFilter, setSelectedFilter] = useState<string>(""); // state for new filter
   const [isCustomView, setIsCustomView] = useState(false); // State to track custom view mode
 
+  // For routing
+  const navigate = useNavigate();
   const handleChange = (newAlignment: string | null) => {
     if (newAlignment !== null) {
       setSelectedClass(null);
@@ -111,7 +113,7 @@ const Main: React.FC<MainProps> = ({ user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const openInNewTab = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
+    navigate(url);
   };
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);

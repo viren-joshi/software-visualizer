@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from "firebase/auth";
 import Main from "./components/mainpage/Main";
@@ -32,31 +32,31 @@ function App() {
 
   return (
     <div className="App">
-      <Router>
-        <Routes>
-          <Route 
-            path="/" 
-            element={user ? <Navigate to="/projects" replace /> : <Navigate to="/signin" replace />} 
-          />
-          <Route 
-            path="/signin" 
-            element={user ? <Navigate to="/projects" replace /> : <SignInSignUp />} 
-          />
-          <Route 
-            path="/projects" 
-            element={user ? <SavedProjects user={user} /> : <Navigate to="/signin" replace />} 
-          />
-          <Route 
-            path="/upload" 
-            element={user ? <UploadFile user={user} /> : <Navigate to="/signin" replace />} 
-          />
-          <Route 
-            path="/mainpage" 
-            element={user ? <Main user={user} /> : <Navigate to="/signin" replace />} 
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+      <HashRouter>
+  <Routes>
+    <Route 
+      path="/" 
+      element={user ? <Navigate to="/projects" replace /> : <Navigate to="/signin" replace />} 
+    />
+    <Route 
+      path="/signin" 
+      element={user ? <Navigate to="/projects" replace /> : <SignInSignUp />} 
+    />
+    <Route 
+      path="/projects" 
+      element={user ? <SavedProjects user={user} /> : <Navigate to="/signin" replace />} 
+    />
+    <Route 
+      path="/upload" 
+      element={user ? <UploadFile user={user} /> : <Navigate to="/signin" replace />} 
+    />
+    <Route 
+      path="/mainpage" 
+      element={user ? <Main user={user} /> : <Navigate to="/signin" replace />} 
+    />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+</HashRouter>
     </div>
   );
 }
