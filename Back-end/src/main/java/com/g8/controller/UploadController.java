@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/initialize")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class UploadController {
 
     private final AnalyzeProjectService analyzeProjectService;
