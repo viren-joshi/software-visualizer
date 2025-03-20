@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 const firebaseConfig = {
-  apiKey: "AIzaSyDMc-TmjcvmiVUWz3XH1v5pQLzKxLkn9Tk",
+  apiKey: "",
   authDomain: "software-vizualizer.firebaseapp.com",
   projectId: "software-vizualizer",
   storageBucket: "software-vizualizer.firebasestorage.app",
